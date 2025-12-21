@@ -7,7 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 class ShopmindProductServiceApplicationTests {
 
     @Test
-    void contextLoads() {
+    void test() {
     }
 
 }
