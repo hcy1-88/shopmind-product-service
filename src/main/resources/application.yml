@@ -22,5 +22,4 @@ spring:
         enabled: true
   config:
     import: "nacos:${spring.application.name}.yaml,nacos:common.yaml"
-server:
-  port: 8083
+
