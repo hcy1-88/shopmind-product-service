@@ -8,6 +8,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 * @description 针对表【sm_products_categories(商品分类表)】的数据库操作Service
 * @createDate 2025-12-21 15:40:09
 */
-public interface ProductsCategorieService extends IService<ProductCategory> {
+public interface ProductsCategoryService extends IService<ProductCategory> {
 
 }

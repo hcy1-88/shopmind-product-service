@@ -2,7 +2,7 @@ package com.shopmind.productservice.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shopmind.productservice.entity.ProductCategory;
-import com.shopmind.productservice.service.ProductsCategorieService;
+import com.shopmind.productservice.service.ProductsCategoryService;
 import com.shopmind.productservice.mapper.ProductsCategorieMapper;
 import org.springframework.stereotype.Service;
 
@@ -12,8 +12,7 @@ import org.springframework.stereotype.Service;
 * @createDate 2025-12-21 15:40:09
 */
 @Service
-public class ProductsCategorieServiceImpl extends ServiceImpl<ProductsCategorieMapper, ProductCategory>
-    implements ProductsCategorieService{
+public class ProductsCategoryServiceImpl extends ServiceImpl<ProductsCategorieMapper, ProductCategory>  implements ProductsCategoryService {
 
 }
 
