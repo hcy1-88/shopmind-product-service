@@ -35,4 +35,5 @@ build/
 .claude
 .cursor
 .gitattributes
+logs
 
