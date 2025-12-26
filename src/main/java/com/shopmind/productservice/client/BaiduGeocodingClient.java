@@ -86,7 +86,7 @@ public class BaiduGeocodingClient {
         // 2. 调用百度获取原始坐标（BD-09）
         BaiduCoordinate bd09 = this.geocode(fullAddr, cityName);
 
-        // 3. 显式转换为 WGS84（由业务决定是否转换）
+        // 3. 显式转换为 WGS84
         double[] wgs84 = GeoCodingUtil.bd09ToWgs84(bd09.getLongitude(), bd09.getLongitude());
 
         // 4. 存入 PostGIS
