@@ -1,7 +1,11 @@
 package com.shopmind.productservice.service;
 
+import com.shopmind.productservice.dto.request.ProductRequestDto;
+import com.shopmind.productservice.dto.response.ProductResponseDto;
 import com.shopmind.productservice.entity.Product;
 import com.baomidou.mybatisplus.extension.service.IService;
+
+import java.util.List;
 
 /**
 * @author hcy18
@@ -9,5 +13,29 @@ import com.baomidou.mybatisplus.extension.service.IService;
 * @createDate 2025-12-21 15:40:09
 */
 public interface ProductService extends IService<Product> {
+    /**
+     * 新增商品
+     * @param productRequestDto 商品表单
+     */
+    ProductResponseDto createProduct(ProductRequestDto productRequestDto);
 
+    /**
+     * 更新商品
+     * @param productId 商品 id
+     * @param productRequestDto 商品表单
+     */
+    ProductResponseDto  updateProduct(Long productId, ProductRequestDto productRequestDto);
+
+    /**
+     * 商家获取商品
+     * @param merchantId 商品 id
+     * @return 商品列表
+     */
+    List<ProductResponseDto> getProductsByMerchantId(Long merchantId);
+
+    /**
+     * 删除商品
+     * @param productId 商品 id
+     */
+    void deleteProductById(Long productId);
 }

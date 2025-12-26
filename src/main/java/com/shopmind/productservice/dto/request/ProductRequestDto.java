@@ -4,6 +4,7 @@ import com.shopmind.productservice.dto.business.PriceRange;
 import com.shopmind.productservice.dto.business.SkuSpecValue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.List;
  * Author: huangcy
  * Date: 2025-12-26
  */
+@Data
 public class ProductRequestDto {
     // ========================= 商品主体信息 ======================
 
@@ -26,7 +28,7 @@ public class ProductRequestDto {
      * 商品分类 id
      */
     @NotNull(message = "商品分类不能为空")
-    private String category;
+    private Long category;
 
     /**
      * 商品预览图片base64带前缀，前端传递格式形如 data:image/png;base64,xxxxxx

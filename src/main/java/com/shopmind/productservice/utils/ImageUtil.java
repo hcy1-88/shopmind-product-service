@@ -1,7 +1,12 @@
 package com.shopmind.productservice.utils;
 
+import cn.hutool.core.img.ImgUtil;
+import cn.hutool.core.util.StrUtil;
+import com.shopmind.framework.components.SpringContextHolder;
+import com.shopmind.framework.service.StorageService;
 import com.shopmind.productservice.exception.ProductServiceException;
 
+import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,9 +17,14 @@ import java.util.regex.Pattern;
  */
 public class ImageUtil {
 
-    public static boolean isBase64Image(String str) {
+    /**
+     * 是否 base64 图片
+     * @param img 图片字符串
+     * @return 布尔
+     */
+    public static boolean isBase64Image(String img) {
         Pattern pattern = Pattern.compile("^data:image/(png|jpeg|jpg|gif);base64,[A-Za-z0-9+/=]+$");
-        return str != null && pattern.matcher(str).matches();
+        return img != null && pattern.matcher(img).matches();
     }
 
     /**

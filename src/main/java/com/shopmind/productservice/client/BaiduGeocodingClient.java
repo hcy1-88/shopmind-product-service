@@ -77,7 +77,7 @@ public class BaiduGeocodingClient {
     public Point createAddressLocation(String provinceName,String cityName, String districtName, String detailAddress) {
         // 城市名是获取经纬度的兜底保障，详细地址未必会包含城市名
         if (StrUtil.isEmpty(cityName)){
-            return null;
+            throw  new ProductServiceException("PRODUCT0003");
         }
         // 1. 拼接地址
         String fullAddr = provinceName + cityName +
