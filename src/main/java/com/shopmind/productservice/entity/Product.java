@@ -4,10 +4,15 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.shopmind.productservice.dto.business.PriceRange;
+import com.shopmind.productservice.enums.ProductStatus;
 import lombok.Data;
+import org.locationtech.jts.geom.Point;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 商品表
@@ -45,7 +50,8 @@ public class Product {
     /**
      * 详情图URL数组
      */
-    private Object detailImages;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<String> detailImages;
 
     /**
      * 商品描述
@@ -70,12 +76,13 @@ public class Product {
     /**
      * 价格区间 {"min": 0, "max": 0}
      */
-    private Object priceRange;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private PriceRange priceRange;
 
     /**
      * 商品状态：draft/pending_review/approved/rejected
      */
-    private String status;
+    private ProductStatus status;
 
     /**
      * 发货地省份编码
@@ -113,9 +120,9 @@ public class Product {
     private String detailAddress;
 
     /**
-     * 发货地地理位置（WGS84）
+     * 发货地地理位置（WGS84）, 需调用 {@link com.shopmind.productservice.client.BaiduGeocodingClient#createAddressLocation(String, String, String, String)} 获取
      */
-    private Object location;
+    private Point location;
 
     /**
      * 浏览次数

@@ -4,9 +4,12 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.shopmind.productservice.dto.business.SkuSpecValue;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * SKU规格定义表
@@ -34,7 +37,8 @@ public class ProductSpec {
     /**
      * 规格值数组 [{"value": "红色", "image": "url"}]
      */
-    private Object specValues;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<SkuSpecValue> specValues;
 
     /**
      * 创建时间
