@@ -1,7 +1,10 @@
 package com.shopmind.productservice.service;
 
+import com.shopmind.productservice.dto.response.CategoryResponseDto;
 import com.shopmind.productservice.entity.ProductCategory;
 import com.baomidou.mybatisplus.extension.service.IService;
+
+import java.util.List;
 
 /**
 * @author hcy18
@@ -9,5 +12,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
 * @createDate 2025-12-21 15:40:09
 */
 public interface ProductsCategoryService extends IService<ProductCategory> {
-
+    /**
+     * 根据级别获取商品分类
+     * @param level 分类级别
+     * @return 商品分类
+     */
+    List<CategoryResponseDto> getProductCategories(Integer level);
 }
