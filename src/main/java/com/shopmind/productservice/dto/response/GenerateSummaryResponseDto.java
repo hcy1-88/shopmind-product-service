@@ -20,9 +20,5 @@ public class GenerateSummaryResponseDto {
      */
     private String summary;
 
-    /**
-     * 摘要质量评分 0-1
-     */
-    private Double qualityScore;
 }
 
