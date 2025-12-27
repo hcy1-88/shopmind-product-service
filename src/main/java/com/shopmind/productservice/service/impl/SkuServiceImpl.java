@@ -52,6 +52,26 @@ public class SkuServiceImpl extends ServiceImpl<SkuMapper, Sku> implements SkuSe
             return resp;
         }).toList();
     }
+
+    @Override
+    public void deleteByProductId(Long productId) {
+        this.lambdaUpdate()
+                .eq(Sku::getProductId, productId)
+                .remove();
+    }
+
+    @Override
+    public List<ProductSkuResponseDto> getSkusByProductId(Long productId) {
+        List<Sku> skus = this.lambdaQuery()
+                .eq(Sku::getProductId, productId)
+                .list();
+        
+        return skus.stream().map(sku -> {
+            ProductSkuResponseDto resp = new ProductSkuResponseDto();
+            BeanUtils.copyProperties(sku, resp);
+            return resp;
+        }).toList();
+    }
 }
 
 

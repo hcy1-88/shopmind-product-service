@@ -11,7 +11,7 @@ import java.util.Date;
  * @TableName sm_products_categories
  */
 @Data
-@TableName(value ="sm_products_categories")
+@TableName(value ="sm_products_categories", autoResultMap = true)
 public class ProductCategory {
     /**
      * 分类ID

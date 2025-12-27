@@ -11,7 +11,7 @@ import java.util.Date;
  * @TableName sm_product_tag_relations
  */
 @Data
-@TableName(value ="sm_product_tag_relations")
+@TableName(value ="sm_product_tag_relations", autoResultMap = true)
 public class ProductTagRelation {
     /**
      * 关联ID

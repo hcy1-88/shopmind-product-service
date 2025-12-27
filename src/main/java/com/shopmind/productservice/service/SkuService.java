@@ -21,4 +21,17 @@ public interface SkuService extends IService<Sku> {
      * @return list ProductSkuResponseDto
      */
     List<ProductSkuResponseDto> addBatchSku(Long productId, List<SkuItemDto> skuItemDtos);
+
+    /**
+     * 删除商品的所有 SKU
+     * @param productId 商品 ID
+     */
+    void deleteByProductId(Long productId);
+
+    /**
+     * 根据商品 ID 获取所有 SKU
+     * @param productId 商品 ID
+     * @return SKU 列表
+     */
+    List<ProductSkuResponseDto> getSkusByProductId(Long productId);
 }

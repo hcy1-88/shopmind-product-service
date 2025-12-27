@@ -15,7 +15,7 @@ import java.util.Map;
  * SKU表
  * @TableName sm_skus
  */
-@TableName(value ="sm_skus")
+@TableName(value ="sm_skus", autoResultMap = true)
 @Data
 public class Sku {
     /**

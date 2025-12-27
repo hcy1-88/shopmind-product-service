@@ -2,6 +2,9 @@ package com.shopmind.productservice.mapper;
 
 import com.shopmind.productservice.entity.ProductAudit;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
 * @author hcy18
@@ -10,7 +13,10 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 * @Entity com.shopmind.productservice.entity.ProductAudit
 */
 public interface ProductAuditMapper extends BaseMapper<ProductAudit> {
-
+    /**
+     * 批量查询每个商品的最新审核记录（PostgreSQL 专用）
+     */
+    List<ProductAudit> selectLatestByProductIds(@Param("productIds") List<Long> productIds);
 }
 
 

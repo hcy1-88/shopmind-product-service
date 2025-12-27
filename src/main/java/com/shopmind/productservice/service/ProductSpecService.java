@@ -19,4 +19,10 @@ public interface ProductSpecService extends IService<ProductSpec> {
      * @return list ProductSpec
      */
     List<ProductSpec> addBatchProductSpecs(Long productId, List<SkuSpecDto> specs);
+
+    /**
+     * 删除商品的所有规格
+     * @param productId 商品 ID
+     */
+    void deleteByProductId(Long productId);
 }

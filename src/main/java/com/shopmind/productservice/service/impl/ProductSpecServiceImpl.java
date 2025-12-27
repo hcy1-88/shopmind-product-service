@@ -54,6 +54,13 @@ public class ProductSpecServiceImpl extends ServiceImpl<ProductSpecMapper, Produ
         this.baseMapper.insert(productSpecs);
         return productSpecs;
     }
+
+    @Override
+    public void deleteByProductId(Long productId) {
+        this.lambdaUpdate()
+                .eq(ProductSpec::getProductId, productId)
+                .remove();
+    }
 }
 
 

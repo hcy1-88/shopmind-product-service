@@ -4,25 +4,14 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.shopmind.productservice.mapper.ProductAuditMapper">
 
-    <resultMap id="BaseResultMap" type="com.shopmind.productservice.entity.ProductAudit">
-            <id property="id" column="id" jdbcType="BIGINT"/>
-            <result property="productId" column="product_id" jdbcType="BIGINT"/>
-            <result property="merchantId" column="merchant_id" jdbcType="BIGINT"/>
-            <result property="auditType" column="audit_type" jdbcType="VARCHAR"/>
-            <result property="auditStatus" column="audit_status" jdbcType="VARCHAR"/>
-            <result property="auditorId" column="auditor_id" jdbcType="BIGINT"/>
-            <result property="titleCheckResult" column="title_check_result" jdbcType="OTHER"/>
-            <result property="imageCheckResults" column="image_check_results" jdbcType="OTHER"/>
-            <result property="rejectReason" column="reject_reason" jdbcType="VARCHAR"/>
-            <result property="suggestions" column="suggestions" jdbcType="OTHER"/>
-            <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
-            <result property="updatedAt" column="updated_at" jdbcType="TIMESTAMP"/>
-    </resultMap>
+    <select id="selectLatestByProductIds" resultType="com.shopmind.productservice.entity.ProductAudit">
+        SELECT DISTINCT ON (product_id) *
+        FROM sm_product_audits
+        WHERE product_id IN
+        <foreach collection="productIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY product_id, created_at DESC
+    </select>
 
-    <sql id="Base_Column_List">
-        id,product_id,merchant_id,
-        audit_type,audit_status,auditor_id,
-        title_check_result,image_check_results,reject_reason,
-        suggestions,created_at,updated_at
-    </sql>
 </mapper>

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.shopmind.productservice.enums.TagType;
 import lombok.Data;
 
 import java.util.Date;
@@ -13,7 +14,7 @@ import java.util.Date;
  * @TableName sm_products_tags
  */
 @Data
-@TableName(value ="sm_products_tags")
+@TableName(value ="sm_products_tags", autoResultMap = true)
 public class ProductsTag {
     /**
      * 标签ID
@@ -29,7 +30,7 @@ public class ProductsTag {
     /**
      * 标签类型：ai_generated/manual
      */
-    private String type;
+    private TagType type;
 
     /**
      * 标签 UI 颜色

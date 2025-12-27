@@ -16,7 +16,7 @@ import java.util.List;
  * @TableName sm_product_specs
  */
 @Data
-@TableName(value ="sm_product_specs")
+@TableName(value ="sm_product_specs", autoResultMap = true)
 public class ProductSpec {
     /**
      * 规格ID

@@ -1,10 +1,16 @@
 package com.shopmind.productservice.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.shopmind.framework.id.IdGenerator;
 import com.shopmind.productservice.entity.ProductTagRelation;
 import com.shopmind.productservice.service.ProductTagRelationService;
 import com.shopmind.productservice.mapper.ProductTagRelationMapper;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
 * @author hcy18
@@ -14,6 +20,35 @@ import org.springframework.stereotype.Service;
 @Service
 public class ProductTagRelationServiceImpl extends ServiceImpl<ProductTagRelationMapper, ProductTagRelation> implements ProductTagRelationService {
 
+    @Resource
+    private IdGenerator idGenerator;
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void createRelations(Long productId, List<Long> tagIds) {
+        if (tagIds == null || tagIds.isEmpty()) {
+            return;
+        }
+
+        List<ProductTagRelation> relations = tagIds.stream()
+                .map(tagId -> {
+                    ProductTagRelation relation = new ProductTagRelation();
+                    relation.setId(idGenerator.nextId());
+                    relation.setProductId(productId);
+                    relation.setTagId(tagId);
+                    return relation;
+                })
+                .toList();
+
+        this.saveBatch(relations);
+    }
+
+    @Override
+    public void deleteByProductId(Long productId) {
+        LambdaQueryWrapper<ProductTagRelation> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ProductTagRelation::getProductId, productId);
+        this.remove(queryWrapper);
+    }
 }
 
 

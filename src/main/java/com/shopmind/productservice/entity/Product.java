@@ -19,7 +19,7 @@ import java.util.List;
  * @TableName sm_products
  */
 @Data
-@TableName(value ="sm_products")
+@TableName(value ="sm_products", autoResultMap = true)
 public class Product {
     /**
      * 商品ID

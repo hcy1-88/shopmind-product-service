@@ -4,44 +4,5 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.shopmind.productservice.mapper.ProductMapper">
 
-    <resultMap id="BaseResultMap" type="com.shopmind.productservice.entity.Product">
-            <id property="id" column="id" jdbcType="BIGINT"/>
-            <result property="merchantId" column="merchant_id" jdbcType="BIGINT"/>
-            <result property="name" column="name" jdbcType="VARCHAR"/>
-            <result property="categoryId" column="category_id" jdbcType="BIGINT"/>
-            <result property="coverImage" column="cover_image" jdbcType="VARCHAR"/>
-            <result property="detailImages" column="detail_images" jdbcType="OTHER"/>
-            <result property="description" column="description" jdbcType="VARCHAR"/>
-            <result property="aiSummary" column="ai_summary" jdbcType="VARCHAR"/>
-            <result property="price" column="price" jdbcType="NUMERIC"/>
-            <result property="originalPrice" column="original_price" jdbcType="NUMERIC"/>
-            <result property="priceRange" column="price_range" jdbcType="OTHER"/>
-            <result property="status" column="status" jdbcType="VARCHAR"/>
-            <result property="provinceCode" column="province_code" jdbcType="VARCHAR"/>
-            <result property="provinceName" column="province_name" jdbcType="VARCHAR"/>
-            <result property="cityCode" column="city_code" jdbcType="VARCHAR"/>
-            <result property="cityName" column="city_name" jdbcType="VARCHAR"/>
-            <result property="districtCode" column="district_code" jdbcType="VARCHAR"/>
-            <result property="districtName" column="district_name" jdbcType="VARCHAR"/>
-            <result property="detailAddress" column="detail_address" jdbcType="VARCHAR"/>
-            <result property="location" column="location" jdbcType="OTHER"/>
-            <result property="viewCount" column="view_count" jdbcType="BIGINT"/>
-            <result property="likeCount" column="like_count" jdbcType="BIGINT"/>
-            <result property="salesCount" column="sales_count" jdbcType="BIGINT"/>
-            <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
-            <result property="updatedAt" column="updated_at" jdbcType="TIMESTAMP"/>
-            <result property="deletedAt" column="deleted_at" jdbcType="TIMESTAMP"/>
-    </resultMap>
 
-    <sql id="Base_Column_List">
-        id,merchant_id,name,
-        category_id,cover_image,detail_images,
-        description,ai_summary,price,
-        original_price,price_range,status,
-        province_code,province_name,city_code,
-        city_name,district_code,district_name,
-        detail_address,location,view_count,
-        like_count,sales_count,created_at,
-        updated_at,deleted_at
-    </sql>
 </mapper>

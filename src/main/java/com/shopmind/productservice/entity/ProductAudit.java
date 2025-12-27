@@ -4,13 +4,20 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.shopmind.productservice.dto.response.ProductAuditResponseDto;
+import com.shopmind.productservice.enums.AuditType;
+import lombok.Data;
+
 import java.util.Date;
+import java.util.List;
 
 /**
  * 商品审核记录表
  * @TableName sm_product_audits
  */
-@TableName(value ="sm_product_audits")
+@Data
+@TableName(value ="sm_product_audits", autoResultMap = true)
 public class ProductAudit {
     /**
      * 审核ID
@@ -31,7 +38,7 @@ public class ProductAudit {
     /**
      * 审核类型：ai/manual
      */
-    private String auditType;
+    private AuditType auditType;
 
     /**
      * 审核状态：pending/approved/rejected
@@ -46,12 +53,14 @@ public class ProductAudit {
     /**
      * 标题审核结果
      */
-    private Object titleCheckResult;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private ProductAuditResponseDto.CheckResult titleCheckResult;
 
     /**
      * 图片审核结果数组
      */
-    private Object imageCheckResults;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<ProductAuditResponseDto.ImageCheckResult> imageCheckResults;
 
     /**
      * 拒绝原因
@@ -61,7 +70,8 @@ public class ProductAudit {
     /**
      * 修改建议
      */
-    private Object suggestions;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<String> suggestions;
 
     /**
      * 创建时间

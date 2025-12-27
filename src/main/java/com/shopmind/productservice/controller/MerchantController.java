@@ -8,7 +8,6 @@ import com.shopmind.productservice.dto.response.ProductResponseDto;
 import com.shopmind.productservice.service.ProductService;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,7 +28,8 @@ public class MerchantController {
     @GetMapping("/products")
     public ResultContext<List<ProductResponseDto>> getProducts() {
         Long merchantId = UserContext.userId();
-        return null;
+        List<ProductResponseDto> productsByMerchantId = productService.getProductsByMerchantId(merchantId);
+        return ResultContext.success(productsByMerchantId);
     }
 
     @RequireAuth
@@ -49,6 +49,7 @@ public class MerchantController {
     @RequireAuth
     @DeleteMapping("/products/{id}")
     public ResultContext<Void> deleteProduct(@PathVariable("id") Long id){
+        productService.deleteProductById(id);
         return ResultContext.success();
     }
 }
