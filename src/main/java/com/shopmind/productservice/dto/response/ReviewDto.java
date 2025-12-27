@@ -20,7 +20,6 @@ public class ReviewDto {
     private String userAvatar;
     private Integer rating;                 // 星级（1~5）
     private String content;
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
     private Date createdAt;
     private List<String> aiTags;            // AI 提取的标签，如 ["屏幕清晰", "续航强"]
 }
