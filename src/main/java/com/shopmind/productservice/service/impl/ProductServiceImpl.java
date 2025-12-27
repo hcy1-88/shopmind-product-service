@@ -307,7 +307,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .categoryId(product.getCategoryId())
                 .build();
 
-        ProductAuditResponseDto auditResponse = aiServiceClient.auditProduct(auditRequest);
+        ProductAuditResponseDto auditResponse = aiServiceClient.auditProduct(auditRequest).getData();
         log.info("商品 {} 审核结果：{}", product.getId(), auditResponse.getAuditStatus());
         return auditResponse;
     }
@@ -324,7 +324,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .imageUrls(Collections.singletonList(product.getCoverImage()))
                 .build();
 
-        GenerateTagsResponseDto tagsResponse = aiServiceClient.generateTags(tagsRequest);
+        GenerateTagsResponseDto tagsResponse = aiServiceClient.generateTags(tagsRequest).getData();
         log.info("商品 {} 生成了 {} 个标签", product.getId(), tagsResponse.getTags().size());
 
         // 保存标签（如果不存在则创建）
@@ -352,7 +352,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .categoryId(product.getCategoryId())
                 .build();
 
-        GenerateSummaryResponseDto summaryResponse = aiServiceClient.generateSummary(summaryRequest);
+        GenerateSummaryResponseDto summaryResponse = aiServiceClient.generateSummary(summaryRequest).getData();
         log.info("商品 {} 生成了 AI 摘要", product.getId());
         return summaryResponse;
     }
@@ -377,7 +377,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .categoryId(product.getCategoryId())
                 .build();
 
-        VectorizeProductResponseDto vectorizeResponse = aiServiceClient.vectorizeProduct(vectorizeRequest);
+        VectorizeProductResponseDto vectorizeResponse = aiServiceClient.vectorizeProduct(vectorizeRequest).getData();
         if (vectorizeResponse.getSuccess()) {
             log.info("商品 {} 向量化成功，向量 ID：{}", product.getId(), vectorizeResponse.getVectorId());
         } else {

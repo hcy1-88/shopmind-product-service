@@ -1,5 +1,6 @@
 package com.shopmind.productservice.client;
 
+import com.shopmind.framework.context.ResultContext;
 import com.shopmind.productservice.dto.request.GenerateSummaryRequestDto;
 import com.shopmind.productservice.dto.request.GenerateTagsRequestDto;
 import com.shopmind.productservice.dto.request.ProductAuditRequestDto;
@@ -26,7 +27,7 @@ public interface AIServiceClient {
      * @return 审核结果
      */
     @PostExchange("/audit/product")
-    ProductAuditResponseDto auditProduct(@RequestBody ProductAuditRequestDto requestDto);
+    ResultContext<ProductAuditResponseDto> auditProduct(@RequestBody ProductAuditRequestDto requestDto);
 
     /**
      * 生成商品标签
@@ -34,7 +35,7 @@ public interface AIServiceClient {
      * @return 生成的标签列表
      */
     @PostExchange("/generate/tags")
-    GenerateTagsResponseDto generateTags(@RequestBody GenerateTagsRequestDto requestDto);
+    ResultContext<GenerateTagsResponseDto> generateTags(@RequestBody GenerateTagsRequestDto requestDto);
 
     /**
      * 生成商品摘要
@@ -42,7 +43,7 @@ public interface AIServiceClient {
      * @return AI 生成的摘要
      */
     @PostExchange("/generate/summary")
-    GenerateSummaryResponseDto generateSummary(@RequestBody GenerateSummaryRequestDto requestDto);
+    ResultContext<GenerateSummaryResponseDto> generateSummary(@RequestBody GenerateSummaryRequestDto requestDto);
 
     /**
      * 商品向量化（用于相似商品推荐和搜索）
@@ -50,5 +51,5 @@ public interface AIServiceClient {
      * @return 向量化结果
      */
     @PostExchange("/vectorize/product")
-    VectorizeProductResponseDto vectorizeProduct(@RequestBody VectorizeProductRequestDto requestDto);
+    ResultContext<VectorizeProductResponseDto> vectorizeProduct(@RequestBody VectorizeProductRequestDto requestDto);
 }
