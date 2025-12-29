@@ -89,7 +89,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         }
 
         // 6. 请求 shopmind ai service 生成商品的 tag
-        List<Long> tagIds = generateAndSaveTags(product);
+        List<ProductsTag> tags = generateAndSaveTags(product);
+        List<Long> tagIds = tags.stream().map(ProductsTag::getId).collect(Collectors.toList());
 
         // 7. 创建商品标签关联
         productTagRelationService.createRelations(product.getId(), tagIds);
@@ -101,7 +102,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         ProductAudit audit = saveAuditRecord(product, auditResponse);
         auditResponse.setAuditTime(audit.getCreatedAt());
         // 12. 构造并返回响应对象
-        return buildProductResponse(product, auditResponse);
+        return buildProductResponse(product, auditResponse, tags);
     }
 
     private void aiCommonOperation(Product product, List<Long> tagIds) {
@@ -158,7 +159,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         }
 
         // 10. 请求 shopmind ai service 重新生成商品的 tag
-        List<Long> tagIds = generateAndSaveTags(existingProduct);
+        List<ProductsTag> tags = generateAndSaveTags(existingProduct);
+        List<Long> tagIds = tags.stream().map(ProductsTag::getId).collect(Collectors.toList());
 
         // 11. 重新创建商品标签关联
         productTagRelationService.createRelations(productId, tagIds);
@@ -171,7 +173,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         auditResponse.setAuditTime(audit.getCreatedAt());
 
         // 16. 构造并返回 ProductResponseDto
-        return buildProductResponse(existingProduct, auditResponse);
+        return buildProductResponse(existingProduct, auditResponse, tags);
     }
 
     @Override
@@ -192,7 +194,11 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .map(product -> {
                     // 从 Map 中获取对应的审核结果
                     ProductAuditResponseDto auditResponse = audits.get(product.getId());
-                    return buildProductResponse(product, auditResponse);
+
+                    // 查询商品 tags
+                    List<ProductsTag> tags = productTagRelationService.findTagsByProductId(product.getId());
+
+                    return buildProductResponse(product, auditResponse, tags);
                 })
                 .collect(Collectors.toList());
 
@@ -311,7 +317,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     /**
      * 生成并保存商品标签
      */
-    private List<Long> generateAndSaveTags(Product product) {
+    private List<ProductsTag> generateAndSaveTags(Product product) {
         GenerateTagsRequestDto tagsRequest = GenerateTagsRequestDto.builder()
                 .productId(product.getId())
                 .title(product.getName())
@@ -324,16 +330,16 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         log.info("商品 {} 生成了 {} 个标签", product.getId(), tagsResponse.getTags().size());
 
         // 保存标签（如果不存在则创建）
-        List<Long> tagIds = new ArrayList<>();
+        List<ProductsTag> pts = new ArrayList<>();
         for (GenerateTagsResponseDto.TagInfo tagInfo : tagsResponse.getTags()) {
             ProductsTag tag = productsTagService.findOrCreateTag(
                     tagInfo.getName(),
                     TagType.AI_GENERATED,
                     tagInfo.getColor()
             );
-            tagIds.add(tag.getId());
+            pts.add(tag);
         }
-        return tagIds;
+        return pts;
     }
 
     /**
@@ -370,7 +376,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .description(product.getDescription())
                 .aiSummary(product.getAiSummary())
                 .tags(tagNames)
-                .categoryId(product.getCategoryId())
                 .build();
 
         VectorizeProductResponseDto vectorizeResponse = aiServiceClient.vectorizeProduct(vectorizeRequest).getData();
@@ -404,7 +409,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     /**
      * 构建商品响应 DTO
      */
-    private ProductResponseDto buildProductResponse(Product product, ProductAuditResponseDto  auditResponse) {
+    private ProductResponseDto buildProductResponse(Product product, ProductAuditResponseDto  auditResponse, List<ProductsTag> tags) {
         ProductResponseDto response = new ProductResponseDto();
         response.setId(product.getId());
         response.setName(product.getName());
@@ -436,6 +441,15 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             response.setSuggestions(auditResponse.getSuggestions());
             response.setAuditTime(auditResponse.getAuditTime());
         }
+
+        // tag
+        List<GenerateTagsResponseDto.TagInfo> tagInfos = tags.stream().map(pt -> {
+            GenerateTagsResponseDto.TagInfo tagInfo = new GenerateTagsResponseDto.TagInfo();
+            tagInfo.setName(pt.getName());
+            tagInfo.setColor(pt.getColor());
+            return tagInfo;
+        }).toList();
+        response.setTagInfo(tagInfos);
         return response;
     }
 }

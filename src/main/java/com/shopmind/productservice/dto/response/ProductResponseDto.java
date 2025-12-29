@@ -92,4 +92,9 @@ public class ProductResponseDto {
      * 审核时间
      */
     private Date auditTime;
+
+    /**
+     * 商品标签
+     */
+    private List<GenerateTagsResponseDto.TagInfo> tagInfo;
 }

@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shopmind.framework.id.IdGenerator;
 import com.shopmind.productservice.entity.ProductTagRelation;
+import com.shopmind.productservice.entity.ProductsTag;
 import com.shopmind.productservice.service.ProductTagRelationService;
 import com.shopmind.productservice.mapper.ProductTagRelationMapper;
+import com.shopmind.productservice.service.ProductsTagService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,9 @@ public class ProductTagRelationServiceImpl extends ServiceImpl<ProductTagRelatio
 
     @Resource
     private IdGenerator idGenerator;
+
+    @Resource
+    private ProductsTagService productsTagService;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -48,6 +53,14 @@ public class ProductTagRelationServiceImpl extends ServiceImpl<ProductTagRelatio
         LambdaQueryWrapper<ProductTagRelation> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ProductTagRelation::getProductId, productId);
         this.remove(queryWrapper);
+    }
+
+    @Override
+    public List<ProductsTag> findTagsByProductId(Long productId) {
+        LambdaQueryWrapper<ProductTagRelation> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ProductTagRelation::getProductId, productId);
+        List<ProductTagRelation> relations = this.list(queryWrapper);
+        return relations.stream().map(relation -> productsTagService.getById(relation.getTagId())).toList();
     }
 }
 

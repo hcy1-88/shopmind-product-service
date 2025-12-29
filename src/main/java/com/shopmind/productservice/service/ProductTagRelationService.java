@@ -2,6 +2,7 @@ package com.shopmind.productservice.service;
 
 import com.shopmind.productservice.entity.ProductTagRelation;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.shopmind.productservice.entity.ProductsTag;
 
 import java.util.List;
 
@@ -24,4 +25,11 @@ public interface ProductTagRelationService extends IService<ProductTagRelation> 
      * @param productId 商品 ID
      */
     void deleteByProductId(Long productId);
+
+    /**
+     * 查找商品的 tags
+     * @param productId 商品 id
+     * @return tags
+     */
+    List<ProductsTag> findTagsByProductId(Long productId);
 }
