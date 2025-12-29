@@ -42,9 +42,6 @@ public class VectorizeProductRequestDto {
      */
     private List<String> tags;
 
-    /**
-     * 商品分类 ID
-     */
-    private Long categoryId;
+
 }
 
