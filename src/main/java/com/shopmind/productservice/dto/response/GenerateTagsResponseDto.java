@@ -40,10 +40,6 @@ public class GenerateTagsResponseDto {
          */
         private String color;
 
-        /**
-         * 相关性评分 0-1
-         */
-        private Double relevanceScore;
     }
 }
 

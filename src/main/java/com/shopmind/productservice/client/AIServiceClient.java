@@ -18,7 +18,7 @@ import org.springframework.web.service.annotation.PostExchange;
  * Author: huangcy
  * Date: 2025-12-26
  */
-@HttpExchange("/ai")
+@HttpExchange("/ai/product")
 public interface AIServiceClient {
 
     /**
@@ -26,7 +26,7 @@ public interface AIServiceClient {
      * @param requestDto 审核请求
      * @return 审核结果
      */
-    @PostExchange("/audit/product")
+    @PostExchange("/audit")
     ResultContext<ProductAuditResponseDto> auditProduct(@RequestBody ProductAuditRequestDto requestDto);
 
     /**
@@ -35,7 +35,7 @@ public interface AIServiceClient {
      * @return 生成的标签列表
      */
     @PostExchange("/generate/tags")
-    ResultContext<GenerateTagsResponseDto> generateTags(@RequestBody GenerateTagsRequestDto requestDto);
+    ResultContext<GenerateTagsResponseDto> generateProductTags(@RequestBody GenerateTagsRequestDto requestDto);
 
     /**
      * 生成商品摘要
@@ -43,7 +43,7 @@ public interface AIServiceClient {
      * @return AI 生成的摘要
      */
     @PostExchange("/generate/summary")
-    ResultContext<GenerateSummaryResponseDto> generateSummary(@RequestBody GenerateSummaryRequestDto requestDto);
+    ResultContext<GenerateSummaryResponseDto> generateProductSummary(@RequestBody GenerateSummaryRequestDto requestDto);
 
     /**
      * 商品向量化（用于相似商品推荐和搜索）

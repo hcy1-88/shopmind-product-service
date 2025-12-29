@@ -6,10 +6,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shopmind.framework.context.UserContext;
 import com.shopmind.framework.id.IdGenerator;
-import com.shopmind.framework.service.StorageService;
 import com.shopmind.productservice.client.AIServiceClient;
 import com.shopmind.productservice.client.BaiduGeocodingClient;
-import com.shopmind.productservice.contants.StorageConstants;
 import com.shopmind.productservice.dto.request.*;
 import com.shopmind.productservice.dto.response.*;
 import com.shopmind.productservice.entity.*;
@@ -19,10 +17,8 @@ import com.shopmind.productservice.enums.TagType;
 import com.shopmind.productservice.exception.ProductServiceException;
 import com.shopmind.productservice.service.*;
 import com.shopmind.productservice.mapper.ProductMapper;
-import com.shopmind.productservice.utils.ImageUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -324,7 +320,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .imageUrls(Collections.singletonList(product.getCoverImage()))
                 .build();
 
-        GenerateTagsResponseDto tagsResponse = aiServiceClient.generateTags(tagsRequest).getData();
+        GenerateTagsResponseDto tagsResponse = aiServiceClient.generateProductTags(tagsRequest).getData();
         log.info("商品 {} 生成了 {} 个标签", product.getId(), tagsResponse.getTags().size());
 
         // 保存标签（如果不存在则创建）
@@ -352,7 +348,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .categoryId(product.getCategoryId())
                 .build();
 
-        GenerateSummaryResponseDto summaryResponse = aiServiceClient.generateSummary(summaryRequest).getData();
+        GenerateSummaryResponseDto summaryResponse = aiServiceClient.generateProductSummary(summaryRequest).getData();
         log.info("商品 {} 生成了 AI 摘要", product.getId());
         return summaryResponse;
     }
