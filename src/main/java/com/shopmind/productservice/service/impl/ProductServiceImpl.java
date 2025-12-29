@@ -64,191 +64,277 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ProductResponseDto createProduct(ProductRequestDto requestDto) {
-        Product product = new Product();
-        long id = idGenerator.nextId();
-        product.setId(id);
+        // 1. 创建并初始化商品
+        Product product = initializeNewProduct(requestDto);
 
-        // 1，填充公共字段
-        fillCommonProductFields(product, requestDto);
-
-        // 2，插入商品
-        this.save(product);
-        log.info("成功插入了商品：{}", product);
-
-        //3，插入规格和 SKU
+        // 2. 创建 sku
         handleSpecsAndSkus(product.getId(), requestDto);
 
-        // 4. 请求 shopmind ai service 进行审核
-        ProductAuditResponseDto auditResponse = performProductAudit(product);
-        
-        // 5. 更新商品状态
-        if (StrUtil.equals(ProductStatus.APPROVED.getValue(),auditResponse.getAuditStatus())) {
-            product.setStatus(ProductStatus.APPROVED);
-        } else {
-            product.setStatus(ProductStatus.REJECTED);
-        }
-
-        // 6. 请求 shopmind ai service 生成商品的 tag
-        List<ProductsTag> tags = generateAndSaveTags(product);
-        List<Long> tagIds = tags.stream().map(ProductsTag::getId).collect(Collectors.toList());
-
-        // 7. 创建商品标签关联
-        productTagRelationService.createRelations(product.getId(), tagIds);
-
-        // 后续请求 ai 相关的操作
-        aiCommonOperation(product, tagIds);
-
-        // 11. 插入一条商品审核记录
-        ProductAudit audit = saveAuditRecord(product, auditResponse);
-        auditResponse.setAuditTime(audit.getCreatedAt());
-        // 12. 构造并返回响应对象
-        return buildProductResponse(product, auditResponse, tags);
-    }
-
-    private void aiCommonOperation(Product product, List<Long> tagIds) {
-        // 8. 请求 shopmind ai service 获取 ai summary
-        GenerateSummaryResponseDto summaryResponse = generateAiSummary(product);
-
-        // 9. 将 ai summary 更新到商品
-        product.setAiSummary(summaryResponse.getSummary());
-        this.updateById(product);
-
-        // 10. 让 shopmind ai service 进行商品向量化
-        vectorizeProduct(product, tagIds);
+        // 3. 处理商品的完整 AI 流程（审核、标签、摘要、向量化等）
+        return processProductWithAI(product, false);
     }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ProductResponseDto updateProduct(Long productId, ProductRequestDto requestDto) {
-        // 1. 校验商品是否存在且可编辑
-        Product existingProduct = this.getById(productId);
-        if (existingProduct == null) {
+        // 1. 校验并获取现有商品
+        Product existingProduct = validateAndGetProduct(productId);
+        
+        // 2. 清理旧数据（规格、SKU、标签关联）
+        cleanupOldProductData(productId);
+        
+        // 3. 更新商品基本信息
+        updateProductBasicInfo(existingProduct, requestDto);
+
+        // 3. 创建新的 sku
+        handleSpecsAndSkus(existingProduct.getId(), requestDto);
+        
+        // 4. 处理商品的完整 AI 流程（审核、标签、摘要、向量化等）
+        return processProductWithAI(existingProduct, true);
+    }
+
+    // ==================== 核心业务流程方法 ====================
+
+    /**
+     * 初始化新商品
+     */
+    private Product initializeNewProduct(ProductRequestDto requestDto) {
+        Product product = new Product();
+        product.setId(idGenerator.nextId());
+        fillCommonProductFields(product, requestDto);
+        this.save(product);
+        log.info("成功创建商品，ID：{}", product.getId());
+        return product;
+    }
+
+    /**
+     * 校验并获取商品
+     */
+    private Product validateAndGetProduct(Long productId) {
+        Product product = this.getById(productId);
+        if (product == null) {
             throw new ProductServiceException("PRODUCT0004");
         }
-        if (!isEditableStatus(existingProduct.getStatus())) {
-            throw new ProductServiceException("PRODUCT0005", existingProduct.getStatus().getDescription());
+        if (!isEditableStatus(product.getStatus())) {
+            throw new ProductServiceException("PRODUCT0005", product.getStatus().getDescription());
         }
-        // 2. 重置为待审核状态（重新提交）
-        existingProduct.setStatus(ProductStatus.PENDING_REVIEW);
+        return product;
+    }
 
-        // 3. 填充更新后的字段（覆盖原值）
-        fillCommonProductFields(existingProduct, requestDto);
-
-        // 4. 更新商品
-        this.updateById(existingProduct);
-        log.info("成功更新商品：{}", existingProduct.getId());
-
-        // 5. 删除旧的 spec 和 sku
+    /**
+     * 清理商品的旧数据
+     */
+    private void cleanupOldProductData(Long productId) {
         productSpecService.deleteByProductId(productId);
         skuService.deleteByProductId(productId);
-
-        // 6. 重新插入规格和 SKU
-        handleSpecsAndSkus(productId, requestDto);
-
-        // 7. 删除旧的标签关联
         productTagRelationService.deleteByProductId(productId);
+        log.info("已清理商品 {} 的旧数据", productId);
+    }
 
-        // 8. 请求 shopmind ai service 进行审核（重新触发）
-        ProductAuditResponseDto auditResponse = performProductAudit(existingProduct);
+    /**
+     * 更新商品基本信息
+     */
+    private void updateProductBasicInfo(Product product, ProductRequestDto requestDto) {
+        product.setStatus(ProductStatus.PENDING_REVIEW);
+        fillCommonProductFields(product, requestDto);
+        this.updateById(product);
+        log.info("成功更新商品基本信息，ID：{}", product.getId());
+    }
+
+    /**
+     * 处理商品的完整 AI 流程
+     * @param product 商品实体
+     * @param isUpdate 是否为更新操作
+     * @return 商品响应 DTO
+     */
+    private ProductResponseDto processProductWithAI(Product product, boolean isUpdate) {
+        // 1. 处理规格和 SKU
+        log.info("商品（id：{}， 是否为更新操作：{}）发布，正在执行 AI 流程 ----------------", product.getId(), isUpdate);
+
+        // 2. 执行 AI 审核
+        ProductAuditResponseDto auditResponse = performProductAudit(product);
         
-        // 9. 更新商品状态
-        if (StrUtil.equals(ProductStatus.APPROVED.getValue(),auditResponse.getAuditStatus())) {
-            existingProduct.setStatus(ProductStatus.APPROVED);
-        } else {
-            existingProduct.setStatus(ProductStatus.REJECTED);
-        }
+        // 3. 根据审核结果更新商品状态
+        updateProductStatus(product, auditResponse);
 
-        // 10. 请求 shopmind ai service 重新生成商品的 tag
-        List<ProductsTag> tags = generateAndSaveTags(existingProduct);
-        List<Long> tagIds = tags.stream().map(ProductsTag::getId).collect(Collectors.toList());
+        // 4. 生成并保存标签
+        List<ProductsTag> tags = generateAndSaveTags(product);
+        List<Long> tagIds = extractTagIds(tags);
 
-        // 11. 重新创建商品标签关联
-        productTagRelationService.createRelations(productId, tagIds);
+        // 5. 创建商品标签关联
+        productTagRelationService.createRelations(product.getId(), tagIds);
 
-        // 12. ai 相关的操作
-        aiCommonOperation(existingProduct, tagIds);
+        // 6. 执行 AI 增强操作（摘要、向量化）
+        performAIEnhancement(product, tagIds);
 
-        // 15. 插入一条【新的】商品审核记录（不要覆盖旧的！）
-        ProductAudit audit = saveAuditRecord(existingProduct, auditResponse);
+        // 7. 保存审核记录
+        ProductAudit audit = saveAuditRecord(product, auditResponse);
         auditResponse.setAuditTime(audit.getCreatedAt());
 
-        // 16. 构造并返回 ProductResponseDto
-        return buildProductResponse(existingProduct, auditResponse, tags);
+        // 8. 构造并返回响应
+        return buildProductResponse(product, auditResponse, tags);
+    }
+
+    /**
+     * 更新商品状态（基于审核结果）
+     */
+    private void updateProductStatus(Product product, ProductAuditResponseDto auditResponse) {
+        ProductStatus newStatus = StrUtil.equals(ProductStatus.APPROVED.getValue(), auditResponse.getAuditStatus())
+                ? ProductStatus.APPROVED
+                : ProductStatus.REJECTED;
+        
+        product.setStatus(newStatus);
+        log.info("商品 {} 审核状态更新为：{}", product.getId(), newStatus);
+    }
+
+    /**
+     * 提取标签 ID 列表
+     */
+    private List<Long> extractTagIds(List<ProductsTag> tags) {
+        return tags.stream()
+                .map(ProductsTag::getId)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 执行 AI 增强操作（摘要生成、向量化）
+     */
+    private void performAIEnhancement(Product product, List<Long> tagIds) {
+        // 生成 AI 摘要
+        GenerateSummaryResponseDto summaryResponse = generateAiSummary(product);
+        product.setAiSummary(summaryResponse.getSummary());
+        this.updateById(product);
+
+        // 向量化商品
+        vectorizeProduct(product, tagIds);
     }
 
     @Override
     public List<ProductResponseDto> getProductsByMerchantId(Long merchantId) {
-        LambdaQueryWrapper<Product> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Product::getMerchantId, merchantId)
+        // 1. 查询商家的所有商品
+        List<Product> products = queryMerchantProducts(merchantId);
+
+        // 2. 批量查询审核记录
+        Map<Long, ProductAuditResponseDto> auditMap = batchQueryAuditRecords(products);
+
+        // 3. 构建响应列表
+        return buildProductResponseList(products, auditMap);
+    }
+
+    /**
+     * 查询商家的所有有效商品
+     */
+    private List<Product> queryMerchantProducts(Long merchantId) {
+        return this.lambdaQuery()
+                .eq(Product::getMerchantId, merchantId)
                 .isNull(Product::getDeletedAt)
-                .orderByDesc(Product::getCreatedAt);
-        
-        List<Product> products = this.list(queryWrapper);
+                .orderByDesc(Product::getCreatedAt)
+                .list();
+    }
 
-        // 查最近的一条审核记录
-        List<Long> pids = products.stream().map(Product::getId).toList();
-        Map<Long, ProductAuditResponseDto> audits = productAuditService.getLatestAuditBatchByProductIds(pids);
+    /**
+     * 批量查询商品的审核记录
+     */
+    private Map<Long, ProductAuditResponseDto> batchQueryAuditRecords(List<Product> products) {
+        List<Long> productIds = products.stream()
+                .map(Product::getId)
+                .toList();
+        return productAuditService.getLatestAuditBatchByProductIds(productIds);
+    }
 
-        // 构建响应列表
+    /**
+     * 批量构建商品响应列表
+     */
+    private List<ProductResponseDto> buildProductResponseList(List<Product> products, 
+                                                              Map<Long, ProductAuditResponseDto> auditMap) {
         return products.stream()
                 .map(product -> {
-                    // 从 Map 中获取对应的审核结果
-                    ProductAuditResponseDto auditResponse = audits.get(product.getId());
-
-                    // 查询商品 tags
+                    ProductAuditResponseDto auditResponse = auditMap.get(product.getId());
                     List<ProductsTag> tags = productTagRelationService.findTagsByProductId(product.getId());
-
                     return buildProductResponse(product, auditResponse, tags);
                 })
                 .collect(Collectors.toList());
-
     }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void deleteProductById(Long productId) {
-        // 1. 检查商品是否存在
+        // 1. 验证商品存在性
+        Product product = getProductOrThrow(productId);
+
+        // 2. 软删除商品
+        softDeleteProduct(product);
+
+        // 3. 清理关联数据
+        cleanupOldProductData(productId);
+    }
+
+    /**
+     * 获取商品，如果不存在则抛出异常
+     */
+    private Product getProductOrThrow(Long productId) {
         Product product = this.getById(productId);
         if (product == null) {
             log.error("商品不存在，product id：{}", productId);
             throw new ProductServiceException("PRODUCT0004");
         }
-
-        // 2. 软删除商品（设置删除时间）
-        product.setDeletedAt(new Date());
-        this.updateById(product);
-        log.info("成功删除商品：{}", productId);
-
-        // 3. 删除相关的规格和 SKU
-        productSpecService.deleteByProductId(productId);
-        skuService.deleteByProductId(productId);
-
-        // 4. 删除商品标签关联
-        productTagRelationService.deleteByProductId(productId);
+        return product;
     }
 
     /**
-     * 判断商品是否处于可编辑状态。 比如审核中的商品，不能编辑
+     * 软删除商品
+     */
+    private void softDeleteProduct(Product product) {
+        product.setDeletedAt(new Date());
+        this.updateById(product);
+        log.info("成功软删除商品，ID：{}", product.getId());
+    }
+
+    // ==================== 数据填充和处理方法 ====================
+
+    /**
+     * 判断商品是否处于可编辑状态
+     * 审核中的商品不能编辑
      */
     private boolean isEditableStatus(ProductStatus status) {
         return status == ProductStatus.REJECTED ||
                 status == ProductStatus.DRAFT ||
-                status == ProductStatus.APPROVED; // 已上架商品也可下架后编辑
+                status == ProductStatus.APPROVED;
     }
 
     /**
      * 填充商品的公共字段（创建 & 更新共用）
      */
     private void fillCommonProductFields(Product product, ProductRequestDto dto) {
+        // 商家信息
         product.setMerchantId(UserContext.userId());
+        
+        // 基本信息
+        fillBasicInfo(product, dto);
+        
+        // 地理位置信息
+        fillLocationInfo(product, dto);
+        
+        // 图片处理
+        processImages(product, dto);
+    }
+
+    /**
+     * 填充商品基本信息
+     */
+    private void fillBasicInfo(Product product, ProductRequestDto dto) {
         product.setName(dto.getName());
         product.setCategoryId(dto.getCategory());
         product.setPrice(dto.getPrice());
         product.setOriginalPrice(dto.getOriginalPrice());
         product.setPriceRange(dto.getPriceRange());
         product.setDescription(dto.getDescription());
+    }
 
-        // 地理位置
+    /**
+     * 填充地理位置信息
+     */
+    private void fillLocationInfo(Product product, ProductRequestDto dto) {
         product.setProvinceCode(dto.getProvinceCode());
         product.setProvinceName(dto.getProvinceName());
         product.setCityCode(dto.getCityCode());
@@ -256,28 +342,28 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         product.setDistrictCode(dto.getDistrictCode());
         product.setDistrictName(dto.getDistrictName());
         product.setDetailAddress(dto.getDetailAddress());
+        
+        // 创建地理位置点
         product.setLocation(baiduGeocodingClient.createAddressLocation(
                 product.getProvinceName(),
                 product.getCityName(),
                 product.getDistrictName(),
                 product.getDetailAddress()
         ));
-
-        // 图片处理
-        processImages(product, dto);
     }
 
     /**
      * 处理商品图片（封面 + 详情图）
      */
     private void processImages(Product product, ProductRequestDto dto) {
-        String coverImgUrl = imageService.getImageUrlFromBase64(dto.getCoverImage());
-        product.setCoverImage(coverImgUrl);
+        // 处理封面图
+        product.setCoverImage(imageService.getImageUrlFromBase64(dto.getCoverImage()));
 
+        // 处理详情图
         List<String> detailImages = dto.getDetailImages();
         if (CollectionUtil.isNotEmpty(detailImages)) {
             List<String> detailImgUrls = detailImages.stream()
-                    .map(base64 -> imageService.getImageUrlFromBase64(base64))
+                    .map(imageService::getImageUrlFromBase64)
                     .toList();
             product.setDetailImages(detailImgUrls);
         } else {
@@ -286,21 +372,35 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     }
 
     /**
-     * 处理规格和 SKU 的创建（创建 & 更新共用）
+     * 处理规格和 SKU 的创建
      */
     private void handleSpecsAndSkus(Long productId, ProductRequestDto dto) {
-        List<ProductSpec> productSpecs = productSpecService.addBatchProductSpecs(productId, dto.getSkuSpecs());
-        log.info("成功创建 {} 个商品规格参数，商品 id：{}", productSpecs.size(), productId);
+        // 创建规格
+        List<ProductSpec> specs = productSpecService.addBatchProductSpecs(productId, dto.getSkuSpecs());
+        log.info("商品 {} 创建了 {} 个规格参数", productId, specs.size());
 
-        List<ProductSkuResponseDto> skuResponses = skuService.addBatchSku(productId, dto.getSkuItems());
-        log.info("成功创建 {} 条 SKU，商品 id：{}", skuResponses.size(), productId);
+        // 创建 SKU
+        List<ProductSkuResponseDto> skus = skuService.addBatchSku(productId, dto.getSkuItems());
+        log.info("商品 {} 创建了 {} 条 SKU", productId, skus.size());
     }
+
+    // ==================== AI 服务调用方法 ====================
 
     /**
      * 执行商品审核
      */
     private ProductAuditResponseDto performProductAudit(Product product) {
-        ProductAuditRequestDto auditRequest = ProductAuditRequestDto.builder()
+        ProductAuditRequestDto request = buildAuditRequest(product);
+        ProductAuditResponseDto response = aiServiceClient.auditProduct(request).getData();
+        log.info("商品 {} 审核完成，结果：{}", product.getId(), response.getAuditStatus());
+        return response;
+    }
+
+    /**
+     * 构建审核请求
+     */
+    private ProductAuditRequestDto buildAuditRequest(Product product) {
+        return ProductAuditRequestDto.builder()
                 .productId(product.getId())
                 .title(product.getName())
                 .description(product.getDescription())
@@ -308,81 +408,117 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .detailImages(product.getDetailImages())
                 .categoryId(product.getCategoryId())
                 .build();
-
-        ProductAuditResponseDto auditResponse = aiServiceClient.auditProduct(auditRequest).getData();
-        log.info("商品 {} 审核结果：{}", product.getId(), auditResponse.getAuditStatus());
-        return auditResponse;
     }
 
     /**
      * 生成并保存商品标签
      */
     private List<ProductsTag> generateAndSaveTags(Product product) {
-        GenerateTagsRequestDto tagsRequest = GenerateTagsRequestDto.builder()
+        // 调用 AI 服务生成标签
+        GenerateTagsRequestDto request = buildTagsRequest(product);
+        GenerateTagsResponseDto response = aiServiceClient.generateProductTags(request).getData();
+        log.info("商品 {} 生成了 {} 个标签", product.getId(), response.getTags().size());
+
+        // 保存标签到数据库
+        return saveTagsToDatabase(response.getTags());
+    }
+
+    /**
+     * 构建标签生成请求
+     */
+    private GenerateTagsRequestDto buildTagsRequest(Product product) {
+        return GenerateTagsRequestDto.builder()
                 .productId(product.getId())
                 .title(product.getName())
                 .description(product.getDescription())
                 .categoryId(product.getCategoryId())
                 .imageUrls(Collections.singletonList(product.getCoverImage()))
                 .build();
+    }
 
-        GenerateTagsResponseDto tagsResponse = aiServiceClient.generateProductTags(tagsRequest).getData();
-        log.info("商品 {} 生成了 {} 个标签", product.getId(), tagsResponse.getTags().size());
-
-        // 保存标签（如果不存在则创建）
-        List<ProductsTag> pts = new ArrayList<>();
-        for (GenerateTagsResponseDto.TagInfo tagInfo : tagsResponse.getTags()) {
-            ProductsTag tag = productsTagService.findOrCreateTag(
-                    tagInfo.getName(),
-                    TagType.AI_GENERATED,
-                    tagInfo.getColor()
-            );
-            pts.add(tag);
-        }
-        return pts;
+    /**
+     * 保存标签到数据库（如果不存在则创建）
+     */
+    private List<ProductsTag> saveTagsToDatabase(List<GenerateTagsResponseDto.TagInfo> tagInfos) {
+        return tagInfos.stream()
+                .map(tagInfo -> productsTagService.findOrCreateTag(
+                        tagInfo.getName(),
+                        TagType.AI_GENERATED,
+                        tagInfo.getColor()
+                ))
+                .collect(Collectors.toList());
     }
 
     /**
      * 生成 AI 摘要
      */
     private GenerateSummaryResponseDto generateAiSummary(Product product) {
-        GenerateSummaryRequestDto summaryRequest = GenerateSummaryRequestDto.builder()
+        GenerateSummaryRequestDto request = buildSummaryRequest(product);
+        GenerateSummaryResponseDto response = aiServiceClient.generateProductSummary(request).getData();
+        log.info("商品 {} AI 摘要生成成功", product.getId());
+        return response;
+    }
+
+    /**
+     * 构建摘要生成请求
+     */
+    private GenerateSummaryRequestDto buildSummaryRequest(Product product) {
+        return GenerateSummaryRequestDto.builder()
                 .productId(product.getId())
                 .title(product.getName())
                 .description(product.getDescription())
                 .price(product.getPrice())
                 .categoryId(product.getCategoryId())
                 .build();
-
-        GenerateSummaryResponseDto summaryResponse = aiServiceClient.generateProductSummary(summaryRequest).getData();
-        log.info("商品 {} 生成了 AI 摘要", product.getId());
-        return summaryResponse;
     }
 
     /**
      * 向量化商品
      */
     private void vectorizeProduct(Product product, List<Long> tagIds) {
-        // 获取标签名称
-        List<String> tagNames = tagIds.stream()
-                .map(tagId -> productsTagService.getById(tagId))
+        // 构建向量化请求
+        List<String> tagNames = getTagNamesByIds(tagIds);
+        VectorizeProductRequestDto request = buildVectorizeRequest(product, tagNames);
+        
+        // 调用向量化服务
+        VectorizeProductResponseDto response = aiServiceClient.vectorizeProduct(request).getData();
+        
+        // 记录结果
+        logVectorizeResult(product.getId(), response);
+    }
+
+    /**
+     * 根据标签 ID 获取标签名称列表
+     */
+    private List<String> getTagNamesByIds(List<Long> tagIds) {
+        return tagIds.stream()
+                .map(productsTagService::getById)
                 .filter(Objects::nonNull)
                 .map(ProductsTag::getName)
                 .collect(Collectors.toList());
+    }
 
-        VectorizeProductRequestDto vectorizeRequest = VectorizeProductRequestDto.builder()
+    /**
+     * 构建向量化请求
+     */
+    private VectorizeProductRequestDto buildVectorizeRequest(Product product, List<String> tagNames) {
+        return VectorizeProductRequestDto.builder()
                 .productId(product.getId())
                 .title(product.getName())
                 .description(product.getDescription())
                 .aiSummary(product.getAiSummary())
                 .tags(tagNames)
                 .build();
+    }
 
-        VectorizeProductResponseDto vectorizeResponse = aiServiceClient.vectorizeProduct(vectorizeRequest).getData();
-        if (vectorizeResponse.getSuccess()) {
-            log.info("商品 {} 向量化成功，向量 ID：{}", product.getId(), vectorizeResponse.getVectorId());
+    /**
+     * 记录向量化结果
+     */
+    private void logVectorizeResult(Long productId, VectorizeProductResponseDto response) {
+        if (Boolean.TRUE.equals(response.getSuccess())) {
+            log.info("商品 {} 向量化成功，向量 ID：{}", productId, response.getVectorId());
         } else {
-            log.error("商品 {} 向量化失败：{}", product.getId(), vectorizeResponse.getErrorMessage());
+            log.error("商品 {} 向量化失败：{}", productId, response.getErrorMessage());
         }
     }
 
@@ -390,6 +526,16 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
      * 保存审核记录
      */
     private ProductAudit saveAuditRecord(Product product, ProductAuditResponseDto auditResponse) {
+        ProductAudit audit = buildAuditEntity(product, auditResponse);
+        productAuditService.save(audit);
+        log.info("商品 {} 审核记录保存成功", product.getId());
+        return audit;
+    }
+
+    /**
+     * 构建审核记录实体
+     */
+    private ProductAudit buildAuditEntity(Product product, ProductAuditResponseDto auditResponse) {
         ProductAudit audit = new ProductAudit();
         audit.setId(idGenerator.nextId());
         audit.setProductId(product.getId());
@@ -400,17 +546,39 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         audit.setImageCheckResults(auditResponse.getImageCheckResults());
         audit.setRejectReason(auditResponse.getRejectReason());
         audit.setSuggestions(auditResponse.getSuggestions());
-        
-        productAuditService.save(audit);
-        log.info("保存了商品 {} 的审核记录", product.getId());
         return audit;
     }
+
+    // ==================== 响应构建方法 ====================
 
     /**
      * 构建商品响应 DTO
      */
-    private ProductResponseDto buildProductResponse(Product product, ProductAuditResponseDto  auditResponse, List<ProductsTag> tags) {
+    private ProductResponseDto buildProductResponse(Product product, ProductAuditResponseDto auditResponse, List<ProductsTag> tags) {
         ProductResponseDto response = new ProductResponseDto();
+        
+        // 基本信息
+        setBasicProductInfo(response, product);
+        
+        // 地理位置
+        response.setLocation(formatLocation(product));
+        
+        // SKU 列表
+        response.setSkus(skuService.getSkusByProductId(product.getId()));
+        
+        // 审核信息
+        setAuditInfo(response, auditResponse);
+        
+        // 标签信息
+        response.setTagInfo(convertToTagInfoList(tags));
+        
+        return response;
+    }
+
+    /**
+     * 设置商品基本信息
+     */
+    private void setBasicProductInfo(ProductResponseDto response, Product product) {
         response.setId(product.getId());
         response.setName(product.getName());
         response.setPrice(product.getPrice());
@@ -423,34 +591,46 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         response.setMerchantId(product.getMerchantId());
         response.setCategory(product.getCategoryId());
         response.setStatus(product.getStatus());
-        
-        // 构建地理位置字符串
-        String location = String.format("%s %s %s", 
+    }
+
+    /**
+     * 格式化地理位置信息
+     */
+    private String formatLocation(Product product) {
+        return String.format("%s %s %s", 
                 product.getProvinceName(), 
                 product.getCityName(), 
                 product.getDistrictName());
-        response.setLocation(location);
+    }
 
-        // 获取 SKU 列表
-        List<ProductSkuResponseDto> skus = skuService.getSkusByProductId(product.getId());
-        response.setSkus(skus);
-
-        // 审核结果
+    /**
+     * 设置审核信息
+     */
+    private void setAuditInfo(ProductResponseDto response, ProductAuditResponseDto auditResponse) {
         if (auditResponse != null) {
             response.setRejectReason(auditResponse.getRejectReason());
             response.setSuggestions(auditResponse.getSuggestions());
             response.setAuditTime(auditResponse.getAuditTime());
         }
+    }
 
-        // tag
-        List<GenerateTagsResponseDto.TagInfo> tagInfos = tags.stream().map(pt -> {
-            GenerateTagsResponseDto.TagInfo tagInfo = new GenerateTagsResponseDto.TagInfo();
-            tagInfo.setName(pt.getName());
-            tagInfo.setColor(pt.getColor());
-            return tagInfo;
-        }).toList();
-        response.setTagInfo(tagInfos);
-        return response;
+    /**
+     * 将标签实体列表转换为标签信息列表
+     */
+    private List<GenerateTagsResponseDto.TagInfo> convertToTagInfoList(List<ProductsTag> tags) {
+        return tags.stream()
+                .map(this::convertToTagInfo)
+                .toList();
+    }
+
+    /**
+     * 将标签实体转换为标签信息
+     */
+    private GenerateTagsResponseDto.TagInfo convertToTagInfo(ProductsTag tag) {
+        GenerateTagsResponseDto.TagInfo tagInfo = new GenerateTagsResponseDto.TagInfo();
+        tagInfo.setName(tag.getName());
+        tagInfo.setColor(tag.getColor());
+        return tagInfo;
     }
 }
 
