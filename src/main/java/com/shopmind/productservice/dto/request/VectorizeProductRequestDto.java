@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -42,6 +43,9 @@ public class VectorizeProductRequestDto {
      */
     private List<String> tags;
 
-
+    /**
+     * 商品的价格（取现价，或者 价格范围的最低价格，或者原价）
+     */
+    private BigDecimal price;
 }
 
