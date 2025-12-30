@@ -42,9 +42,5 @@ public class ProductAuditRequestDto {
      */
     private List<String> detailImages;
 
-    /**
-     * 商品分类 ID
-     */
-    private Long categoryId;
 }
 

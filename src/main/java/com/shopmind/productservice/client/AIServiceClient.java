@@ -50,6 +50,6 @@ public interface AIServiceClient {
      * @param requestDto 向量化请求
      * @return 向量化结果
      */
-    @PostExchange("/vectorize/product")
+    @PostExchange("/vectorize")
     ResultContext<VectorizeProductResponseDto> vectorizeProduct(@RequestBody VectorizeProductRequestDto requestDto);
 }

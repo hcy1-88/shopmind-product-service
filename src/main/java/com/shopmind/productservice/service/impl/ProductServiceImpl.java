@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -406,7 +407,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .description(product.getDescription())
                 .coverImage(product.getCoverImage())
                 .detailImages(product.getDetailImages())
-                .categoryId(product.getCategoryId())
                 .build();
     }
 
@@ -463,13 +463,35 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
      * 构建摘要生成请求
      */
     private GenerateSummaryRequestDto buildSummaryRequest(Product product) {
-        return GenerateSummaryRequestDto.builder()
+        GenerateSummaryRequestDto resq = GenerateSummaryRequestDto.builder()
                 .productId(product.getId())
                 .title(product.getName())
                 .description(product.getDescription())
                 .price(product.getPrice())
                 .categoryId(product.getCategoryId())
                 .build();
+        resq.setPrice(getOnePrice(product));
+        return resq;
+    }
+
+    /**
+     * 至少取一个价格作为商品的参考价格
+     * @param product 商品
+     * @return 价格
+     */
+    private static BigDecimal getOnePrice(Product product) {
+        BigDecimal price = product.getPrice();
+        if (price == null) {
+            price = product.getPriceRange().getMin();
+            if (price == null) {
+                price = product.getOriginalPrice();
+            }
+        }
+        if (price == null) {
+            log.error("商品 Id：{} 价格确实！", product.getId());
+            throw new ProductServiceException("PRODUCT0006");
+        }
+        return price;
     }
 
     /**
@@ -502,13 +524,15 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
      * 构建向量化请求
      */
     private VectorizeProductRequestDto buildVectorizeRequest(Product product, List<String> tagNames) {
-        return VectorizeProductRequestDto.builder()
+        VectorizeProductRequestDto vectorizeProductRequestDto = VectorizeProductRequestDto.builder()
                 .productId(product.getId())
                 .title(product.getName())
                 .description(product.getDescription())
                 .aiSummary(product.getAiSummary())
                 .tags(tagNames)
                 .build();
+        vectorizeProductRequestDto.setPrice(getOnePrice(product));
+        return vectorizeProductRequestDto;
     }
 
     /**
