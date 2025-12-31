@@ -12,6 +12,7 @@ import com.shopmind.framework.context.UserContext;
 import com.shopmind.framework.id.IdGenerator;
 import com.shopmind.productservice.client.AIServiceClient;
 import com.shopmind.productservice.client.BaiduGeocodingClient;
+import com.shopmind.productservice.constant.RedisKeyConstant;
 import com.shopmind.productservice.dto.request.*;
 import com.shopmind.productservice.dto.response.*;
 import com.shopmind.productservice.entity.*;
@@ -23,6 +24,8 @@ import com.shopmind.productservice.service.*;
 import com.shopmind.productservice.mapper.ProductMapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RList;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,6 +68,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     @Resource
     private ProductTagRelationService productTagRelationService;
+
+    @Resource
+    private RedissonClient redissonClient;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -688,6 +694,69 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         tagInfo.setName(tag.getName());
         tagInfo.setColor(tag.getColor());
         return tagInfo;
+    }
+
+    // ==================== 热门商品相关方法 ====================
+
+    @Override
+    public List<ProductResponseDto> getHotProducts(Integer limit) {
+        // 1. 从 Redis 获取热门商品 ID 列表
+        List<Long> hotProductIds = getHotProductIdsFromRedis(limit);
+
+        if (hotProductIds.isEmpty()) {
+            log.warn("Redis 中没有热门商品数据，返回空列表");
+            return Collections.emptyList();
+        }
+
+        // 2. 根据 ID 批量查询商品
+        List<Product> products = this.lambdaQuery()
+                .in(Product::getId, hotProductIds)
+                .eq(Product::getStatus, ProductStatus.APPROVED)
+                .isNull(Product::getDeletedAt)
+                .list();
+
+        // 3. 转 map
+        Map<Long, Product> productMap = products.stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
+        // 4. 按照 Redis 中的顺序排序（保持热度排序），转换为简化 DTO
+        return hotProductIds.stream()
+                .map(productMap::get)
+                .filter(Objects::nonNull)
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 从 Redis 获取热门商品 ID 列表
+     */
+    private List<Long> getHotProductIdsFromRedis(Integer limit) {
+        String key = RedisKeyConstant.HOT_PRODUCTS_GUEST;
+        RList<Long> list = redissonClient.getList(key);
+
+        // 检查列表是否存在
+        if (!list.isExists() || list.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 获取列表范围 [0, limit-1]
+        int end = Math.min(limit, list.size());
+        return new ArrayList<>(list.subList(0, end));
+    }
+
+    /**
+     * 将 Product 转换为 ProductResponseDto
+     */
+    private ProductResponseDto convertToDto(Product product) {
+        return ProductResponseDto.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .price(product.getPrice())
+                .image(product.getCoverImage())
+                .originalPrice(product.getOriginalPrice())
+                .aiSummary(product.getAiSummary())
+                .location(formatLocation(product))
+                .build();
     }
 }
 

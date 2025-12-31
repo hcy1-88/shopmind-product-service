@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.shopmind.productservice.dto.business.PriceRange;
 import com.shopmind.productservice.enums.ProductStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -16,6 +19,9 @@ import java.util.List;
  * Date: 2025-12-26
  */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL) // 仅序列化非 null 字段
 public class ProductResponseDto {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
