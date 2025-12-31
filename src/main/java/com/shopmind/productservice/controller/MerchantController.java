@@ -1,8 +1,10 @@
 package com.shopmind.productservice.controller;
 
 import com.shopmind.framework.annotation.RequireAuth;
+import com.shopmind.framework.context.PageResult;
 import com.shopmind.framework.context.ResultContext;
 import com.shopmind.framework.context.UserContext;
+import com.shopmind.productservice.dto.request.MerchantProductQueryParams;
 import com.shopmind.productservice.dto.request.ProductRequestDto;
 import com.shopmind.productservice.dto.response.ProductResponseDto;
 import com.shopmind.productservice.service.ProductService;
@@ -26,9 +28,9 @@ public class MerchantController {
 
     @RequireAuth
     @GetMapping("/products")
-    public ResultContext<List<ProductResponseDto>> getProducts() {
+    public ResultContext<PageResult<List<ProductResponseDto>>> getProducts(MerchantProductQueryParams params) {
         Long merchantId = UserContext.userId();
-        List<ProductResponseDto> productsByMerchantId = productService.getProductsByMerchantId(merchantId);
+        PageResult<List<ProductResponseDto>> productsByMerchantId = productService.getProductsByMerchantId(merchantId, params);
         return ResultContext.success(productsByMerchantId);
     }
 

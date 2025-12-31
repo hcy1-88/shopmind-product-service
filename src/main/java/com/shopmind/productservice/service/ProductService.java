@@ -1,5 +1,7 @@
 package com.shopmind.productservice.service;
 
+import com.shopmind.framework.context.PageResult;
+import com.shopmind.productservice.dto.request.MerchantProductQueryParams;
 import com.shopmind.productservice.dto.request.ProductRequestDto;
 import com.shopmind.productservice.dto.response.ProductResponseDto;
 import com.shopmind.productservice.entity.Product;
@@ -31,7 +33,7 @@ public interface ProductService extends IService<Product> {
      * @param merchantId 商品 id
      * @return 商品列表
      */
-    List<ProductResponseDto> getProductsByMerchantId(Long merchantId);
+    PageResult<List<ProductResponseDto>> getProductsByMerchantId(Long merchantId, MerchantProductQueryParams params);
 
     /**
      * 删除商品

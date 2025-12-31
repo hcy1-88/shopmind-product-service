@@ -3,7 +3,11 @@ package com.shopmind.productservice.service.impl;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.shopmind.framework.context.PageResult;
 import com.shopmind.framework.context.UserContext;
 import com.shopmind.framework.id.IdGenerator;
 import com.shopmind.productservice.client.AIServiceClient;
@@ -215,26 +219,51 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     }
 
     @Override
-    public List<ProductResponseDto> getProductsByMerchantId(Long merchantId) {
+    public PageResult<List<ProductResponseDto>> getProductsByMerchantId(Long merchantId, MerchantProductQueryParams params) {
         // 1. 查询商家的所有商品
-        List<Product> products = queryMerchantProducts(merchantId);
+        IPage<Product> products = queryMerchantProducts(merchantId, params);
+
 
         // 2. 批量查询审核记录
-        Map<Long, ProductAuditResponseDto> auditMap = batchQueryAuditRecords(products);
+        Map<Long, ProductAuditResponseDto> auditMap = batchQueryAuditRecords(products.getRecords());
 
         // 3. 构建响应列表
-        return buildProductResponseList(products, auditMap);
+        List<ProductResponseDto> productResponseDtos = buildProductResponseList(products.getRecords(), auditMap);
+        return PageResult.<List<ProductResponseDto>>builder()
+                .data(productResponseDtos)
+                .total(products.getTotal())
+                .pageNumber(products.getCurrent())
+                .pageSize(products.getSize())
+                .build();
     }
 
     /**
      * 查询商家的所有有效商品
      */
-    private List<Product> queryMerchantProducts(Long merchantId) {
-        return this.lambdaQuery()
-                .eq(Product::getMerchantId, merchantId)
+    private IPage<Product> queryMerchantProducts(Long merchantId, MerchantProductQueryParams params) {
+        if (params.getPageNumber() == null || params.getPageSize() == null) {
+            log.error("分页参数为 null");
+            throw new IllegalArgumentException("分页参数异常！");
+        }
+        IPage<Product> page = new Page<>();
+        page.setCurrent(params.getPageNumber());
+        page.setSize(params.getPageSize());
+
+        LambdaQueryChainWrapper<Product> wrapper = this.lambdaQuery()
+                .eq(Product::getMerchantId, merchantId);
+
+        if(StrUtil.isNotEmpty(params.getStatus())) {
+            wrapper.eq(Product::getStatus, params.getStatus());
+        }
+
+        if (StrUtil.isNotEmpty(params.getKeyword())) {
+            wrapper.like(Product::getName, params.getKeyword());
+        }
+
+        return wrapper
                 .isNull(Product::getDeletedAt)
                 .orderByDesc(Product::getCreatedAt)
-                .list();
+                .page(page);
     }
 
     /**
