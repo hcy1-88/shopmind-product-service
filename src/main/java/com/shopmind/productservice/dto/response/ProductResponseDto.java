@@ -2,6 +2,7 @@ package com.shopmind.productservice.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.shopmind.productservice.client.dto.response.GenerateTagsResponseDto;
 import com.shopmind.productservice.dto.business.PriceRange;
 import com.shopmind.productservice.enums.ProductStatus;
 import lombok.AllArgsConstructor;

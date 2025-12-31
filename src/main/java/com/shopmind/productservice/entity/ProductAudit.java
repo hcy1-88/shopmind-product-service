@@ -1,11 +1,10 @@
 package com.shopmind.productservice.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
-import com.shopmind.productservice.dto.response.ProductAuditResponseDto;
+import com.shopmind.productservice.client.dto.response.ProductAuditResponseDto;
 import com.shopmind.productservice.enums.AuditType;
 import lombok.Data;
 

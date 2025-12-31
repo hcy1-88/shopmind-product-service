@@ -1,6 +1,6 @@
 package com.shopmind.productservice.service;
 
-import com.shopmind.productservice.dto.response.ProductAuditResponseDto;
+import com.shopmind.productservice.client.dto.response.ProductAuditResponseDto;
 import com.shopmind.productservice.entity.ProductAudit;
 import com.baomidou.mybatisplus.extension.service.IService;
 

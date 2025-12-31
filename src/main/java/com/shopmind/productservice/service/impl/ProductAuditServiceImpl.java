@@ -1,9 +1,7 @@
 package com.shopmind.productservice.service.impl;
 
-import cn.hutool.core.collection.CollectionUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.shopmind.productservice.dto.response.ProductAuditResponseDto;
+import com.shopmind.productservice.client.dto.response.ProductAuditResponseDto;
 import com.shopmind.productservice.entity.ProductAudit;
 import com.shopmind.productservice.service.ProductAuditService;
 import com.shopmind.productservice.mapper.ProductAuditMapper;

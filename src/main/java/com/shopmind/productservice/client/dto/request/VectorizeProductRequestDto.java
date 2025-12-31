@@ -1,14 +1,15 @@
-package com.shopmind.productservice.dto.request;
+package com.shopmind.productservice.client.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * AI 商品审核请求 DTO
+ * AI 向量化请求 DTO
  * Author: huangcy
  * Date: 2025-12-26
  */
@@ -16,7 +17,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductAuditRequestDto {
+public class VectorizeProductRequestDto {
     /**
      * 商品 ID
      */
@@ -33,14 +34,18 @@ public class ProductAuditRequestDto {
     private String description;
 
     /**
-     * 封面图片 URL
+     * AI 摘要
      */
-    private String coverImage;
+    private String aiSummary;
 
     /**
-     * 详情图片 URL 列表
+     * 商品标签列表
      */
-    private List<String> detailImages;
+    private List<String> tags;
 
+    /**
+     * 商品的价格（取现价，或者 价格范围的最低价格，或者原价）
+     */
+    private BigDecimal price;
 }
 

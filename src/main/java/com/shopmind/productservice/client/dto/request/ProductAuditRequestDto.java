@@ -1,14 +1,14 @@
-package com.shopmind.productservice.dto.request;
+package com.shopmind.productservice.client.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
+import java.util.List;
 
 /**
- * AI 生成摘要请求 DTO
+ * AI 商品审核请求 DTO
  * Author: huangcy
  * Date: 2025-12-26
  */
@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GenerateSummaryRequestDto {
+public class ProductAuditRequestDto {
     /**
      * 商品 ID
      */
@@ -33,13 +33,14 @@ public class GenerateSummaryRequestDto {
     private String description;
 
     /**
-     * 商品价格
+     * 封面图片 URL
      */
-    private BigDecimal price;
+    private String coverImage;
 
     /**
-     * 商品分类 ID
+     * 详情图片 URL 列表
      */
-    private Long categoryId;
+    private List<String> detailImages;
+
 }
 

@@ -1,4 +1,4 @@
-package com.shopmind.productservice.dto.response;
+package com.shopmind.productservice.client.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

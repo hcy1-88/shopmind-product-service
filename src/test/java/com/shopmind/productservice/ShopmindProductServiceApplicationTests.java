@@ -2,21 +2,17 @@ package com.shopmind.productservice;
 
 import com.shopmind.framework.context.ResultContext;
 import com.shopmind.productservice.client.AIServiceClient;
-import com.shopmind.productservice.dto.request.ProductAuditRequestDto;
-import com.shopmind.productservice.dto.response.ProductAuditResponseDto;
+import com.shopmind.productservice.client.dto.request.ProductAuditRequestDto;
+import com.shopmind.productservice.client.dto.response.ProductAuditResponseDto;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
-import org.springframework.web.client.RestClient;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @SpringBootTest

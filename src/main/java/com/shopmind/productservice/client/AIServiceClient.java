@@ -1,14 +1,14 @@
 package com.shopmind.productservice.client;
 
 import com.shopmind.framework.context.ResultContext;
-import com.shopmind.productservice.dto.request.GenerateSummaryRequestDto;
-import com.shopmind.productservice.dto.request.GenerateTagsRequestDto;
-import com.shopmind.productservice.dto.request.ProductAuditRequestDto;
-import com.shopmind.productservice.dto.request.VectorizeProductRequestDto;
-import com.shopmind.productservice.dto.response.GenerateSummaryResponseDto;
-import com.shopmind.productservice.dto.response.GenerateTagsResponseDto;
-import com.shopmind.productservice.dto.response.ProductAuditResponseDto;
-import com.shopmind.productservice.dto.response.VectorizeProductResponseDto;
+import com.shopmind.productservice.client.dto.request.GenerateSummaryRequestDto;
+import com.shopmind.productservice.client.dto.request.GenerateTagsRequestDto;
+import com.shopmind.productservice.client.dto.request.ProductAuditRequestDto;
+import com.shopmind.productservice.client.dto.request.VectorizeProductRequestDto;
+import com.shopmind.productservice.client.dto.response.GenerateSummaryResponseDto;
+import com.shopmind.productservice.client.dto.response.GenerateTagsResponseDto;
+import com.shopmind.productservice.client.dto.response.ProductAuditResponseDto;
+import com.shopmind.productservice.client.dto.response.VectorizeProductResponseDto;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;

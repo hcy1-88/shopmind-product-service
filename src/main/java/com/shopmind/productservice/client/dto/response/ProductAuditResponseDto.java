@@ -1,4 +1,4 @@
-package com.shopmind.productservice.dto.response;
+package com.shopmind.productservice.client.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 /**
  * AI 商品审核响应 DTO
