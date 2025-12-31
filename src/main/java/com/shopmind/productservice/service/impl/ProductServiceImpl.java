@@ -158,15 +158,19 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         // 3. 根据审核结果更新商品状态
         updateProductStatus(product, auditResponse);
 
-        // 4. 生成并保存标签
-        List<ProductsTag> tags = generateAndSaveTags(product);
-        List<Long> tagIds = extractTagIds(tags);
+        List<ProductsTag> tags = new ArrayList<>();
+        // 审核成功才能生成 tag、AI 摘要、向量化商品
+        if (product.getStatus() == ProductStatus.APPROVED) {
+            // 4. 生成并保存标签
+            tags = generateAndSaveTags(product);
+            List<Long> tagIds = extractTagIds(tags);
 
-        // 5. 创建商品标签关联
-        productTagRelationService.createRelations(product.getId(), tagIds);
+            // 5. 创建商品标签关联
+            productTagRelationService.createRelations(product.getId(), tagIds);
 
-        // 6. 执行 AI 增强操作（摘要、向量化）
-        performAIEnhancement(product, tagIds);
+            // 6. 执行 AI 增强操作（摘要、向量化）
+            performAIEnhancement(product, tagIds);
+        }
 
         // 7. 保存审核记录
         ProductAudit audit = saveAuditRecord(product, auditResponse);
