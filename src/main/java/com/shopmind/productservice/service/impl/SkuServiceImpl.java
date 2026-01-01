@@ -69,6 +69,7 @@ public class SkuServiceImpl extends ServiceImpl<SkuMapper, Sku> implements SkuSe
         return skus.stream().map(sku -> {
             ProductSkuResponseDto resp = new ProductSkuResponseDto();
             BeanUtils.copyProperties(sku, resp);
+            resp.setAttributes(sku.getSkuSpecs());
             return resp;
         }).toList();
     }

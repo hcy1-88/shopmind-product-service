@@ -45,4 +45,10 @@ public class ProductController {
         List<ProductResponseDto> productsBatch = productService.getProductsBatch(requestDTO.getIds());
         return ResultContext.success(productsBatch);
     }
+
+    @GetMapping("/detail/{productId}")
+    public ResultContext<ProductResponseDto> getProductById(@PathVariable("productId") Long productId){
+        ProductResponseDto productDetail = productService.getProductDetailById(productId);
+        return ResultContext.success(productDetail);
+    }
 }

@@ -786,6 +786,41 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .build();
     }
 
+    @Override
+    public ProductResponseDto getProductDetailById(Long productId) {
+        // 1. 查询商品基本信息
+        Product product = this.lambdaQuery()
+                .eq(Product::getId, productId)
+                .eq(Product::getStatus, ProductStatus.APPROVED)
+                .isNull(Product::getDeletedAt)
+                .one();
+
+        if (product == null) {
+            log.error("商品不存在或未上架，product id：{}", productId);
+            throw new ProductServiceException("PRODUCT0004");
+        }
+
+        // 2. 查询标签信息
+        List<ProductsTag> tags = productTagRelationService.findTagsByProductId(productId);
+        List<GenerateTagsResponseDto.TagInfo> tagInfoList = convertToTagInfoList(tags);
+
+        // 3. 使用 convertToDto 构建基础响应
+        ProductResponseDto responseDto = convertToDto(product, tagInfoList);
+
+        // 4. 查询并设置 SKU 信息
+        List<ProductSkuResponseDto> skus = skuService.getSkusByProductId(productId);
+        responseDto.setSkus(skus);
+
+        // 5. 设置详情图片
+        responseDto.setImages(product.getDetailImages());
+
+        // 6. 设置商品状态
+        responseDto.setStatus(product.getStatus());
+
+        log.info("成功查询商品详情，商品ID：{}", productId);
+        return responseDto;
+    }
+
 }
 
 

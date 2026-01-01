@@ -53,4 +53,11 @@ public interface ProductService extends IService<Product> {
      */
     List<ProductResponseDto> getProductsBatch(List<Long> ids);
 
+    /**
+     * 根据商品ID获取商品详情(C端)
+     * @param productId 商品ID
+     * @return 商品详情
+     */
+    ProductResponseDto getProductDetailById(Long productId);
+
 }
