@@ -632,7 +632,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         
         // 地理位置
         response.setLocation(formatLocation(product));
-        
+        fillAddressField(product, response);
+
         // SKU 列表
         response.setSkus(skuService.getSkusByProductId(product.getId()));
         
@@ -817,8 +818,21 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         // 6. 设置商品状态
         responseDto.setStatus(product.getStatus());
 
+        // 7, 商品位置
+        fillAddressField(product, responseDto);
+
         log.info("成功查询商品详情，商品ID：{}", productId);
         return responseDto;
+    }
+
+    private void fillAddressField(Product product, ProductResponseDto responseDto) {
+        responseDto.setProvinceCode(product.getProvinceCode());
+        responseDto.setProvinceName(product.getProvinceName());
+        responseDto.setCityCode(product.getCityCode());
+        responseDto.setCityName(product.getCityName());
+        responseDto.setDistrictCode(product.getDistrictCode());
+        responseDto.setDistrictName(product.getDistrictName());
+        responseDto.setDetailAddress(product.getDetailAddress());
     }
 
 }

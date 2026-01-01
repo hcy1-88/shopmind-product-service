@@ -34,6 +34,9 @@ public class MerchantController {
         return ResultContext.success(productsByMerchantId);
     }
 
+    /**
+     * 发布商品
+     */
     @RequireAuth
     @PostMapping("/products")
     public ResultContext<ProductResponseDto> createProduct(@Valid @RequestBody ProductRequestDto productRequestDto){
@@ -41,6 +44,9 @@ public class MerchantController {
         return ResultContext.success(product);
     }
 
+    /**
+     * 编辑修改商品
+     */
     @RequireAuth
     @PutMapping("/products/{id}")
     public ResultContext<ProductResponseDto> updateProduct(@Valid @RequestBody ProductRequestDto productRequestDto, @PathVariable("id") Long id){

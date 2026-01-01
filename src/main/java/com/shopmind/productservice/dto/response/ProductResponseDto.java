@@ -65,6 +65,14 @@ public class ProductResponseDto {
      */
     private String location;
 
+    private String provinceCode;
+    private String provinceName;
+    private String cityCode;
+    private String cityName;
+    private String districtCode;
+    private String districtName;
+    private String detailAddress;
+
     /**
      * 分类 id
      */
