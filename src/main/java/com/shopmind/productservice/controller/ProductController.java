@@ -31,8 +31,7 @@ public class ProductController {
      * @return 简化的商品列表
      */
     @GetMapping("/hot")
-    public ResultContext<List<ProductResponseDto>> getHotProducts(
-            @RequestParam(defaultValue = "10") Integer limit) {
+    public ResultContext<List<ProductResponseDto>> getHotProducts(@RequestParam(defaultValue = "10") Integer limit) {
         
         // 限制最大查询数量
         if (limit > 100) {

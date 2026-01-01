@@ -44,7 +44,8 @@ public interface ProductService extends IService<Product> {
     /**
      * 获取热门商品（首页）
      * @param limit 数量限制
-     * @return 简化的商品列表
+     * @return 商品列表
      */
     List<ProductResponseDto> getHotProducts(Integer limit);
+
 }
