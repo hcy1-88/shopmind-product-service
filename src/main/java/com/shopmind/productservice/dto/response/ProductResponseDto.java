@@ -104,4 +104,9 @@ public class ProductResponseDto {
      * 商品标签
      */
     private List<GenerateTagsResponseDto.TagInfo> tagInfo;
+
+    /**
+     * 销量
+     */
+    private Long salesCount;
 }

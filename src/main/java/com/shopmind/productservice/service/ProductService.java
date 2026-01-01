@@ -48,4 +48,9 @@ public interface ProductService extends IService<Product> {
      */
     List<ProductResponseDto> getHotProducts(Integer limit);
 
+    /**
+     * 批量获取商品
+     */
+    List<ProductResponseDto> getProductsBatch(List<Long> ids);
+
 }

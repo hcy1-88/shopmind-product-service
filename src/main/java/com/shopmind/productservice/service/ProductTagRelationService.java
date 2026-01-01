@@ -1,10 +1,12 @@
 package com.shopmind.productservice.service;
 
+import com.shopmind.productservice.client.dto.response.GenerateTagsResponseDto;
 import com.shopmind.productservice.entity.ProductTagRelation;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.shopmind.productservice.entity.ProductsTag;
 
 import java.util.List;
+import java.util.Map;
 
 /**
 * @author hcy18
@@ -32,4 +34,11 @@ public interface ProductTagRelationService extends IService<ProductTagRelation> 
      * @return tags
      */
     List<ProductsTag> findTagsByProductId(Long productId);
+
+    /**
+     * 批量获取商品标签
+     * @param productIds 商品 id
+     * @return 商品标签
+     */
+    Map<Long, List<GenerateTagsResponseDto.TagInfo>> findTagsByProductIds(List<Long> productIds);
 }

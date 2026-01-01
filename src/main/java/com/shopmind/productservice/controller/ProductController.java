@@ -1,13 +1,11 @@
 package com.shopmind.productservice.controller;
 
 import com.shopmind.framework.context.ResultContext;
+import com.shopmind.productservice.dto.request.ProductGettingRequestDTO;
 import com.shopmind.productservice.dto.response.ProductResponseDto;
 import com.shopmind.productservice.service.ProductService;
 import jakarta.annotation.Resource;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -40,5 +38,11 @@ public class ProductController {
         
         List<ProductResponseDto> hotProducts = productService.getHotProducts(limit);
         return ResultContext.success(hotProducts);
+    }
+
+    @PostMapping("/ids")
+    public ResultContext<List<ProductResponseDto>> getProductsBatch(@RequestBody ProductGettingRequestDTO requestDTO){
+        List<ProductResponseDto> productsBatch = productService.getProductsBatch(requestDTO.getIds());
+        return ResultContext.success(productsBatch);
     }
 }

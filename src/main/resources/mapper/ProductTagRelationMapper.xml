@@ -3,6 +3,17 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.shopmind.productservice.mapper.ProductTagRelationMapper">
-
+    <select id="selectTagsByProductIds" resultType="com.shopmind.productservice.dto.business.ProductTagDTO">
+        SELECT
+        r.product_id AS productId,
+        t.name AS tagName,
+        t.color AS tagColor
+        FROM sm_product_tag_relations r
+        INNER JOIN sm_products_tags t ON r.tag_id = t.id
+        WHERE r.product_id IN
+        <foreach collection="productIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
 
 </mapper>

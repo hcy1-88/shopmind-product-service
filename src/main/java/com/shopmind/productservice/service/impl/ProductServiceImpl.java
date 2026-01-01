@@ -703,6 +703,15 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         return tagInfo;
     }
 
+    @Override
+    public List<ProductResponseDto> getProductsBatch(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return convertProductResponseByIds(ids);
+    }
+
     // ==================== 热门商品相关方法 ====================
 
     @Override
@@ -716,23 +725,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         }
 
         // 2. 根据 ID 批量查询商品
-        List<Product> products = this.lambdaQuery()
-                .in(Product::getId, hotProductIds)
-                .eq(Product::getStatus, ProductStatus.APPROVED)
-                .isNull(Product::getDeletedAt)
-                .list();
+        return convertProductResponseByIds(hotProductIds);
 
-        // 3. 转 map
-        Map<Long, Product> productMap = products.stream()
-                .collect(Collectors.toMap(Product::getId, p -> p));
-
-        // 4. 按照 Redis 中的顺序排序（保持热度排序），转换为简化 DTO
-        return hotProductIds.stream()
-                .map(productMap::get)
-                .filter(Objects::nonNull)
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
     }
+
 
     /**
      * 从 Redis 获取热门商品 ID 列表
@@ -752,17 +748,41 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     }
 
     /**
+     * 根据商品 id，直接返回响应
+     */
+    private List<ProductResponseDto> convertProductResponseByIds(List<Long> productIds) {
+        List<Product> products = this.lambdaQuery()
+                .in(Product::getId, productIds)
+                .eq(Product::getStatus, ProductStatus.APPROVED)
+                .isNull(Product::getDeletedAt)
+                .list();
+
+        // 3. 查 tag
+        List<Long> ids = products.stream().map(Product::getId).toList();
+        Map<Long, List<GenerateTagsResponseDto.TagInfo>> tagsByProductIds = productTagRelationService.findTagsByProductIds(ids);
+
+        // 4, 转换 dto
+        return products.stream().map(p -> convertToDto(p, tagsByProductIds.get(p.getId()))).toList();
+    }
+
+    /**
      * 将 Product 转换为 ProductResponseDto
      */
-    private ProductResponseDto convertToDto(Product product) {
+    private ProductResponseDto convertToDto(Product product, List<GenerateTagsResponseDto.TagInfo> tags) {
+
         return ProductResponseDto.builder()
                 .id(product.getId())
                 .name(product.getName())
                 .price(product.getPrice())
                 .image(product.getCoverImage())
                 .originalPrice(product.getOriginalPrice())
+                .priceRange(product.getPriceRange())
+                .category(product.getCategoryId())
                 .aiSummary(product.getAiSummary())
+                .description(product.getDescription())
+                .salesCount(product.getSalesCount())
                 .location(formatLocation(product))
+                .tagInfo(tags)
                 .build();
     }
 

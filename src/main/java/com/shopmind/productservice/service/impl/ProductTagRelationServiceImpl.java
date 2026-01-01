@@ -3,6 +3,8 @@ package com.shopmind.productservice.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shopmind.framework.id.IdGenerator;
+import com.shopmind.productservice.client.dto.response.GenerateTagsResponseDto;
+import com.shopmind.productservice.dto.business.ProductTagDTO;
 import com.shopmind.productservice.entity.ProductTagRelation;
 import com.shopmind.productservice.entity.ProductsTag;
 import com.shopmind.productservice.service.ProductTagRelationService;
@@ -12,7 +14,10 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
 * @author hcy18
@@ -27,6 +32,9 @@ public class ProductTagRelationServiceImpl extends ServiceImpl<ProductTagRelatio
 
     @Resource
     private ProductsTagService productsTagService;
+
+    @Resource
+    private ProductTagRelationMapper productTagRelationMapper;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -61,6 +69,27 @@ public class ProductTagRelationServiceImpl extends ServiceImpl<ProductTagRelatio
         queryWrapper.eq(ProductTagRelation::getProductId, productId);
         List<ProductTagRelation> relations = this.list(queryWrapper);
         return relations.stream().map(relation -> productsTagService.getById(relation.getTagId())).toList();
+    }
+
+    @Override
+    public Map<Long, List<GenerateTagsResponseDto.TagInfo>> findTagsByProductIds(List<Long> productIds) {
+        List<ProductTagDTO> productTagDTOS = productTagRelationMapper.selectTagsByProductIds(productIds);
+        if (productIds == null || productIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        // 1. 一次查询获取所有 (productId, tagName, tagColor)
+        List<ProductTagDTO> dtos = productTagRelationMapper.selectTagsByProductIds(productIds);
+
+        // 2. 按 productId 分组
+        return dtos.stream()
+                .collect(Collectors.groupingBy(
+                        ProductTagDTO::getProductId,
+                        Collectors.mapping(
+                                dto -> new GenerateTagsResponseDto.TagInfo(dto.getTagName(), dto.getTagColor()),
+                                Collectors.toList()
+                        )
+                ));
     }
 }
 
