@@ -23,7 +23,7 @@ public class ImageUtil {
      * @return 布尔
      */
     public static boolean isBase64Image(String img) {
-        Pattern pattern = Pattern.compile("^data:image/(png|jpeg|jpg|gif);base64,[A-Za-z0-9+/=]+$");
+        Pattern pattern = Pattern.compile("^data:image/(png|jpeg|jpg|gif|webp);base64,[A-Za-z0-9+/=]+$");
         return img != null && pattern.matcher(img).matches();
     }
 
