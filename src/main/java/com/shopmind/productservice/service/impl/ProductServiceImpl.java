@@ -133,9 +133,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (product == null) {
             throw new ProductServiceException("PRODUCT0004");
         }
-        if (!isEditableStatus(product.getStatus())) {
-            throw new ProductServiceException("PRODUCT0005", product.getStatus().getDescription());
-        }
         return product;
     }
 
@@ -338,16 +335,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     }
 
     // ==================== 数据填充和处理方法 ====================
-
-    /**
-     * 判断商品是否处于可编辑状态
-     * 审核中的商品不能编辑
-     */
-    private boolean isEditableStatus(ProductStatus status) {
-        return status == ProductStatus.REJECTED ||
-                status == ProductStatus.DRAFT ||
-                status == ProductStatus.APPROVED;
-    }
 
     /**
      * 填充商品的公共字段（创建 & 更新共用）
@@ -784,6 +771,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .salesCount(product.getSalesCount())
                 .location(formatLocation(product))
                 .tagInfo(tags)
+                .merchantId(product.getMerchantId())
                 .build();
     }
 
@@ -792,7 +780,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         // 1. 查询商品基本信息
         Product product = this.lambdaQuery()
                 .eq(Product::getId, productId)
-                .eq(Product::getStatus, ProductStatus.APPROVED)
                 .isNull(Product::getDeletedAt)
                 .one();
 
