@@ -1,6 +1,7 @@
 package com.shopmind.productservice.service;
 
 import com.shopmind.framework.context.PageResult;
+import com.shopmind.productservice.client.dto.request.ProductSoldRequestDTO;
 import com.shopmind.productservice.dto.request.MerchantProductQueryParams;
 import com.shopmind.productservice.dto.request.ProductRequestDto;
 import com.shopmind.productservice.dto.response.ProductResponseDto;
@@ -60,4 +61,8 @@ public interface ProductService extends IService<Product> {
      */
     ProductResponseDto getProductDetailById(Long productId);
 
+    /**
+     * 订单服务下单成功时，下游商品服务的业务处理
+     */
+    void handleProductWhenSold(List<ProductSoldRequestDTO> soldRequestDTOs);
 }

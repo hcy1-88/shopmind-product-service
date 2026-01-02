@@ -3,6 +3,7 @@ package com.shopmind.productservice.dto.request;
 import com.shopmind.productservice.dto.business.PriceRange;
 import com.shopmind.productservice.dto.business.SkuSpecValue;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -21,7 +22,7 @@ public class ProductRequestDto {
     /**
      * 商品标题
      */
-    @NotNull(message = "商品标题不能为空")
+    @NotBlank(message = "商品标题不能为空")
     private String name;
 
     /**
@@ -33,7 +34,7 @@ public class ProductRequestDto {
     /**
      * 商品预览图片base64带前缀，前端传递格式形如 data:image/png;base64,xxxxxx
      */
-    @NotNull(message = "商品预览图不能为空")
+    @NotBlank(message = "商品预览图不能为空")
     private String coverImage;
 
     /**
@@ -44,13 +45,11 @@ public class ProductRequestDto {
     /**
      * 现价（单一价格）
      */
-    @DecimalMin(value = "0.01", message = "价格不能小于0.01")
     private BigDecimal price;
 
     /**
      * 原价（单一价格）
      */
-    @DecimalMin(value = "0.01", message = "价格不能小于0.01")
     private BigDecimal originalPrice;
 
     /**
@@ -61,7 +60,7 @@ public class ProductRequestDto {
     /**
      * 商品描述
      */
-    @NotNull(message = "商品描述不能为空")
+    @NotBlank(message = "商品描述不能为空")
     private String description;
 
 

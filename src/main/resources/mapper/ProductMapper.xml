@@ -5,4 +5,9 @@
 <mapper namespace="com.shopmind.productservice.mapper.ProductMapper">
 
 
+    <update id="incrementProductSalesCount">
+        UPDATE sm_products
+        SET sales_count = sales_count + #{quantity}
+        WHERE id = #{productId}
+    </update>
 </mapper>

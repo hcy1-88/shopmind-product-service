@@ -2,6 +2,7 @@ package com.shopmind.productservice.mapper;
 
 import com.shopmind.productservice.entity.Product;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
 * @author hcy18
@@ -11,6 +12,12 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 */
 public interface ProductMapper extends BaseMapper<Product> {
 
+    /**
+     * 增加销量
+     * @param productId 商品 id
+     * @param quantity 数量
+     */
+    void incrementProductSalesCount(@Param("productId") Long productId, @Param("quantity") Integer quantity);
 }
 
 

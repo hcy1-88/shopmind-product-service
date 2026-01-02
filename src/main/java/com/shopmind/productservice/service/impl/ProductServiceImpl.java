@@ -11,10 +11,7 @@ import com.shopmind.framework.context.UserContext;
 import com.shopmind.framework.id.IdGenerator;
 import com.shopmind.productservice.client.AIServiceClient;
 import com.shopmind.productservice.client.BaiduGeocodingClient;
-import com.shopmind.productservice.client.dto.request.GenerateSummaryRequestDto;
-import com.shopmind.productservice.client.dto.request.GenerateTagsRequestDto;
-import com.shopmind.productservice.client.dto.request.ProductAuditRequestDto;
-import com.shopmind.productservice.client.dto.request.VectorizeProductRequestDto;
+import com.shopmind.productservice.client.dto.request.*;
 import com.shopmind.productservice.client.dto.response.GenerateSummaryResponseDto;
 import com.shopmind.productservice.client.dto.response.GenerateTagsResponseDto;
 import com.shopmind.productservice.client.dto.response.ProductAuditResponseDto;
@@ -79,9 +76,13 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     @Resource
     private RedissonClient redissonClient;
 
+    @Resource
+    private ProductMapper productMapper;
+
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ProductResponseDto createProduct(ProductRequestDto requestDto) {
+        log.info("开始创建商品，productName:{} ---------------------- ", requestDto.getName());
         // 1. 创建并初始化商品
         Product product = initializeNewProduct(requestDto);
 
@@ -89,7 +90,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         handleSpecsAndSkus(product.getId(), requestDto);
 
         // 3. 处理商品的完整 AI 流程（审核、标签、摘要、向量化等）
-        return processProductWithAI(product, false);
+        ProductResponseDto res = processProductWithAI(product, false);
+        log.info("商品创建成功, product Id:{} --------------- ", res.getId());
+        return res;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -822,6 +825,16 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         responseDto.setDetailAddress(product.getDetailAddress());
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void handleProductWhenSold(List<ProductSoldRequestDTO> soldRequestDTOs) {
+        soldRequestDTOs.forEach(soldRequestDto -> {
+            // 1，先减 sku 库存
+            skuService.deductStock(soldRequestDto.getProductId(), soldRequestDto.getSkuId(),  soldRequestDto.getQuantity());
+            // 2，增加商品销量
+            productMapper.incrementProductSalesCount(soldRequestDto.getProductId(), soldRequestDto.getQuantity());
+        });
+    }
 }
 
 

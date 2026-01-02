@@ -34,4 +34,12 @@ public interface SkuService extends IService<Sku> {
      * @return SKU 列表
      */
     List<ProductSkuResponseDto> getSkusByProductId(Long productId);
+
+    /**
+     * 减库存
+     * @param productId 商品 id
+     * @param skuId  sku id
+     * @param quantity 扣减数量
+     */
+    void deductStock(Long productId, Long skuId, Integer quantity);
 }

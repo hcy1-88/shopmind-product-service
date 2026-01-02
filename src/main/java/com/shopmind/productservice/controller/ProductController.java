@@ -1,10 +1,13 @@
 package com.shopmind.productservice.controller;
 
 import com.shopmind.framework.context.ResultContext;
+import com.shopmind.productservice.client.dto.request.ProductSoldRequestDTO;
 import com.shopmind.productservice.dto.request.ProductGettingRequestDTO;
+import com.shopmind.productservice.dto.request.ProductRequestDto;
 import com.shopmind.productservice.dto.response.ProductResponseDto;
 import com.shopmind.productservice.service.ProductService;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -51,4 +54,11 @@ public class ProductController {
         ProductResponseDto productDetail = productService.getProductDetailById(productId);
         return ResultContext.success(productDetail);
     }
+
+    @PostMapping("/sale")
+    public ResultContext<Void> productBeSold(@Valid @RequestBody List<ProductSoldRequestDTO> soldRequestDTOs){
+        productService.handleProductWhenSold(soldRequestDTOs);
+        return ResultContext.success();
+    }
+
 }
