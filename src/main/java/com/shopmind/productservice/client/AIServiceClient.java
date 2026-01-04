@@ -9,6 +9,8 @@ import com.shopmind.productservice.client.dto.response.GenerateSummaryResponseDt
 import com.shopmind.productservice.client.dto.response.GenerateTagsResponseDto;
 import com.shopmind.productservice.client.dto.response.ProductAuditResponseDto;
 import com.shopmind.productservice.client.dto.response.VectorizeProductResponseDto;
+import com.shopmind.productservice.dto.request.EnhanceKeywordRequestDTO;
+import com.shopmind.productservice.dto.response.EnhanceKeywordResponseDTO;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
@@ -52,4 +54,7 @@ public interface AIServiceClient {
      */
     @PostExchange("/vectorize")
     ResultContext<VectorizeProductResponseDto> vectorizeProduct(@RequestBody VectorizeProductRequestDto requestDto);
+
+    @PostExchange("/enhance/search-keyword")
+    ResultContext<EnhanceKeywordResponseDTO> enhanceSearchKeyword(@RequestBody EnhanceKeywordRequestDTO requestDto);
 }

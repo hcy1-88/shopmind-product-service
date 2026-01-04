@@ -10,4 +10,12 @@
         SET sales_count = sales_count + #{quantity}
         WHERE id = #{productId}
     </update>
+
+    <select id="searchProductIdsByEnhancedKeywords" resultType="java.lang.Long">
+        SELECT id
+        FROM sm_products
+        WHERE search_vector @@ to_tsquery('jiebacfg', #{tsQueryStr})
+        ORDER BY ts_rank(search_vector, websearch_to_tsquery('jiebacfg', #{originalKeyword})) DESC
+            LIMIT #{limit}
+    </select>
 </mapper>

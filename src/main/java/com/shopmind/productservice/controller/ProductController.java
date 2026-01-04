@@ -1,5 +1,6 @@
 package com.shopmind.productservice.controller;
 
+import com.shopmind.framework.context.PageResult;
 import com.shopmind.framework.context.ResultContext;
 import com.shopmind.productservice.client.dto.request.ProductSoldRequestDTO;
 import com.shopmind.productservice.dto.request.ProductGettingRequestDTO;
@@ -61,4 +62,12 @@ public class ProductController {
         return ResultContext.success();
     }
 
+    @GetMapping("/search")
+    public ResultContext<PageResult<List<ProductResponseDto>>> searchProducts(
+            @RequestParam("keyword") String keyword,
+            @RequestParam("pageNumber") Integer pageNumber,
+            @RequestParam("pageSize") Integer pageSize){
+        PageResult<List<ProductResponseDto>> listPageResult = productService.searchProducts(keyword, pageNumber, pageSize);
+        return ResultContext.success(listPageResult);
+    }
 }

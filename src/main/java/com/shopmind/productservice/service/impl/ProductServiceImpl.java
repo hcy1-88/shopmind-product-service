@@ -7,10 +7,12 @@ import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapp
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shopmind.framework.context.PageResult;
+import com.shopmind.framework.context.ResultContext;
 import com.shopmind.framework.context.UserContext;
 import com.shopmind.framework.id.IdGenerator;
 import com.shopmind.productservice.client.AIServiceClient;
 import com.shopmind.productservice.client.BaiduGeocodingClient;
+import com.shopmind.productservice.client.RecommendationClient;
 import com.shopmind.productservice.client.dto.request.*;
 import com.shopmind.productservice.client.dto.response.GenerateSummaryResponseDto;
 import com.shopmind.productservice.client.dto.response.GenerateTagsResponseDto;
@@ -24,6 +26,7 @@ import com.shopmind.productservice.enums.AuditType;
 import com.shopmind.productservice.enums.ProductStatus;
 import com.shopmind.productservice.enums.TagType;
 import com.shopmind.productservice.exception.ProductServiceException;
+import com.shopmind.productservice.properties.SearchProperties;
 import com.shopmind.productservice.service.*;
 import com.shopmind.productservice.mapper.ProductMapper;
 import jakarta.annotation.Resource;
@@ -35,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -78,6 +82,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     @Resource
     private ProductMapper productMapper;
+
+    @Resource
+    private SearchProperties searchProperties;
+
+    @Resource
+    private RecommendationClient recommendationClient;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -834,6 +844,106 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             // 2，增加商品销量
             productMapper.incrementProductSalesCount(soldRequestDto.getProductId(), soldRequestDto.getQuantity());
         });
+    }
+
+    @Override
+    public PageResult<List<ProductResponseDto>> searchProducts(String keyword, Integer page, Integer pageSize) {
+        List<Long> resIds = new ArrayList<>();
+        // 1, 增强搜索词
+        ResultContext<EnhanceKeywordResponseDTO> enhanceRes = aiServiceClient.enhanceSearchKeyword(new EnhanceKeywordRequestDTO(keyword));
+        EnhanceKeywordResponseDTO data = enhanceRes.getData();
+        List<String> coreWords = data.getCoreWords();
+        List<String> expandWords = data.getExpandWords();
+        log.info("原始搜索词：{}, 增强后的核心词：{} 扩展词：{}", keyword, coreWords, expandWords);
+
+        // 构建语义排序请求
+        SearchAndRankWithSemanticsRequestDTO requestDTO = new SearchAndRankWithSemanticsRequestDTO();
+        requestDTO.setKeyword(keyword);
+        requestDTO.setLimit(searchProperties.getSemanticsSearchRecall());
+
+        // 2，如果核心词和扩展词为空，退回到纯语义搜索
+        if (CollectionUtil.isEmpty(coreWords) && CollectionUtil.isEmpty(expandWords)) {
+            // fallback 到纯语义搜索
+            log.warn("核心词和扩展词为空！回退到纯语义搜索！");
+            resIds = recommendationClient.searchAndRankWithSemantics(requestDTO).getData();
+        } else {
+            // 3, 如果存在可搜索词，先全文搜索，按 pgsql ts_rank 函数排序
+            String tsQueryString = buildTsQueryString(coreWords, expandWords);
+            log.info("keyword: {}, ts_query: {}", keyword, tsQueryString);
+            List<Long> ids = productMapper.searchProductIdsByEnhancedKeywords(tsQueryString, keyword, searchProperties.getFullTextSearchRecall());
+            log.info("keyword: {}, 全文搜索召回数：{}", keyword, ids.size());
+            // 4， 语义排序和过滤
+            requestDTO.setProductIds(ids);
+            resIds = recommendationClient.searchAndRankWithSemantics(requestDTO).getData();
+        }
+        log.info("keyword: {} ， 语义召回数：{}", keyword, resIds.size());
+
+        // 5, 分页
+        long total = resIds.size();
+        int fromIndex = (page - 1) * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, resIds.size());
+
+        List<Long> pageIds = new ArrayList<>();
+        if (fromIndex < total) {
+            pageIds = resIds.subList(fromIndex, toIndex);
+        }
+
+        // 批量查询商品详情
+        List<ProductResponseDto> pageData = CollectionUtil.isEmpty(pageIds)
+                ? Collections.emptyList()
+                : getProductsBatch(pageIds);
+
+        // 构造分页结果
+        return PageResult.<List<ProductResponseDto>>builder()
+                .total(total)
+                .pageSize((long) pageSize)
+                .pageNumber((long) page)
+                .data(pageData)
+                .build();
+    }
+
+    /**
+     * pgsql tsquery 语法构建
+     * @param coreWords  核心词，用 与号 & 连接
+     * @param expandWords 扩展词，用 | 或符号连接
+     * @return 示例 (续航 | 拍照) & 手机 & 华为
+     */
+    public static String buildTsQueryString(List<String> coreWords, List<String> expandWords) {
+        Function<String, String> escapeWord = word -> {
+            if (word == null) return "";
+            if (word.matches(".*[&|!()<> \t\n].*")) {
+                return "\"" + word.replace("\"", "\"\"") + "\"";
+            }
+            return word;
+        };
+
+        String corePart = "";
+        if (coreWords != null && !coreWords.isEmpty()) {
+            corePart = coreWords.stream()
+                    .map(escapeWord)
+                    .filter(w -> !w.isEmpty())
+                    .collect(Collectors.joining(" & "));
+        }
+
+        String expandPart = "";
+        if (expandWords != null && !expandWords.isEmpty()) {
+            String orClause = expandWords.stream()
+                    .map(escapeWord)
+                    .filter(w -> !w.isEmpty())
+                    .collect(Collectors.joining(" | "));
+            if (!orClause.isEmpty()) {
+                expandPart = "(" + orClause + ")";
+            }
+        }
+
+        // 组合
+        if (!corePart.isEmpty() && !expandPart.isEmpty()) {
+            return expandPart + " & " + corePart;
+        } else if (!corePart.isEmpty()) {
+            return corePart;
+        } else {
+            return expandPart.isEmpty() ? "" : expandPart;
+        }
     }
 }
 

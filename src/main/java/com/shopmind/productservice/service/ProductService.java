@@ -65,4 +65,9 @@ public interface ProductService extends IService<Product> {
      * 订单服务下单成功时，下游商品服务的业务处理
      */
     void handleProductWhenSold(List<ProductSoldRequestDTO> soldRequestDTOs);
+
+    /**
+     * 搜索
+     */
+    PageResult<List<ProductResponseDto>> searchProducts(String keyword, Integer page, Integer pageSize);
 }

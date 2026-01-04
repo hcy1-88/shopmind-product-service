@@ -3,6 +3,7 @@ package com.shopmind.productservice.config;
 import com.shopmind.framework.constant.ServiceNameConstant;
 import com.shopmind.framework.util.ShopmindHttpClientUtils;
 import com.shopmind.productservice.client.AIServiceClient;
+import com.shopmind.productservice.client.RecommendationClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
@@ -21,5 +22,10 @@ public class HttpExchangeConfig {
     @Bean
     public AIServiceClient  aiServiceClient(RestClient.Builder builder) {
         return ShopmindHttpClientUtils.createLoadBalancedClient(builder, ServiceNameConstant.AI_SERVICE, AIServiceClient.class);
+    }
+
+    @Bean
+    public RecommendationClient recommendationClient(RestClient.Builder builder) {
+        return ShopmindHttpClientUtils.createLoadBalancedClient(builder, ServiceNameConstant.RECOMMENDATION_SERVICE, RecommendationClient.class);
     }
 }
