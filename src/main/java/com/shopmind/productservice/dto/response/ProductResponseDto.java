@@ -117,4 +117,14 @@ public class ProductResponseDto {
      * 销量
      */
     private Long salesCount;
+
+    /**
+     * 浏览量
+     */
+    private Long viewCount;
+
+    /**
+     * 点赞量
+     */
+    private long likeCount;
 }

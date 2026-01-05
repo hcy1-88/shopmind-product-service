@@ -26,17 +26,21 @@ import com.shopmind.productservice.enums.AuditType;
 import com.shopmind.productservice.enums.ProductStatus;
 import com.shopmind.productservice.enums.TagType;
 import com.shopmind.productservice.exception.ProductServiceException;
+import com.shopmind.productservice.properties.RecommendProperties;
 import com.shopmind.productservice.properties.SearchProperties;
 import com.shopmind.productservice.service.*;
 import com.shopmind.productservice.mapper.ProductMapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RAtomicLong;
+import org.redisson.api.RBucket;
 import org.redisson.api.RList;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -88,6 +92,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     @Resource
     private RecommendationClient recommendationClient;
+
+    @Resource
+    private RecommendProperties recommendProperties;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -785,6 +792,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .location(formatLocation(product))
                 .tagInfo(tags)
                 .merchantId(product.getMerchantId())
+                .viewCount(product.getViewCount())
+                .salesCount(product.getSalesCount())
+                .likeCount(product.getLikeCount())
                 .build();
     }
 
@@ -944,6 +954,36 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         } else {
             return expandPart.isEmpty() ? "" : expandPart;
         }
+    }
+
+    @Override
+    public void addView(Long productId) {
+        // 1，更新浏览量
+        Product product = this.lambdaQuery()
+                .select(Product::getViewCount)
+                .eq(Product::getId, productId)
+                .one();
+        product.setViewCount(product.getViewCount() + 1);
+        this.updateById(product);
+
+        // 2，统计 view 参数作为 热度评估的其中一个指标（这么做是为了放了防止冷门商品只是因为年龄大积累了很多浏览量而导致误判为热门商品）
+        String key = RedisKeyConstant.PRODUCT_VIEW_PREFIX + productId;
+        RAtomicLong view = redissonClient.getAtomicLong(key);
+        // 浏览量加 1
+        long current = view.incrementAndGet();
+        // 第一次访问时，设置过期时间
+        if (current == 1) {
+            view.expire(Duration.ofDays(recommendProperties.getViewExpire()));
+        }
+    }
+
+    @Override
+    public List<ProductResponseDto> getNewProducts(Integer limit) {
+        String key = RedisKeyConstant.PRODUCT_NEW;
+        RList<Long> ids = redissonClient.getList(key);
+        // 存的时候已经降序了，见 NewProductJob
+        List<Long> limits = ids.stream().limit(limit).toList();
+        return getProductsBatch(limits);
     }
 }
 

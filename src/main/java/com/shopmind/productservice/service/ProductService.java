@@ -70,4 +70,15 @@ public interface ProductService extends IService<Product> {
      * 搜索
      */
     PageResult<List<ProductResponseDto>> searchProducts(String keyword, Integer page, Integer pageSize);
+
+    /**
+     * 增加浏览量埋点
+     * @param productId 商品 id
+     */
+    void addView(Long productId);
+
+    /**
+     * 获取新品
+     */
+    List<ProductResponseDto> getNewProducts(Integer limit);
 }

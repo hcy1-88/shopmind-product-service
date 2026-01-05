@@ -1,5 +1,6 @@
 package com.shopmind.productservice.controller;
 
+import com.google.common.base.Preconditions;
 import com.shopmind.framework.context.PageResult;
 import com.shopmind.framework.context.ResultContext;
 import com.shopmind.productservice.client.dto.request.ProductSoldRequestDTO;
@@ -9,6 +10,7 @@ import com.shopmind.productservice.dto.response.ProductResponseDto;
 import com.shopmind.productservice.service.ProductService;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -52,6 +54,8 @@ public class ProductController {
 
     @GetMapping("/detail/{productId}")
     public ResultContext<ProductResponseDto> getProductById(@PathVariable("productId") Long productId){
+        // 埋点，增加浏览量
+        productService.addView(productId);
         ProductResponseDto productDetail = productService.getProductDetailById(productId);
         return ResultContext.success(productDetail);
     }
@@ -69,5 +73,16 @@ public class ProductController {
             @RequestParam("pageSize") Integer pageSize){
         PageResult<List<ProductResponseDto>> listPageResult = productService.searchProducts(keyword, pageNumber, pageSize);
         return ResultContext.success(listPageResult);
+    }
+
+    /**
+     * 获取新品
+     * @param limit 限制数
+     */
+    @GetMapping("/new")
+    public ResultContext<List<ProductResponseDto>> getNewProducts(@RequestParam("limit") Integer limit){
+        Preconditions.checkArgument(limit > 0, "limit should be greater than 0");
+        List<ProductResponseDto> newProducts = productService.getNewProducts(limit);
+        return ResultContext.success(newProducts);
     }
 }

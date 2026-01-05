@@ -9,14 +9,10 @@ package com.shopmind.productservice.constant;
 public class RedisKeyConstant {
     
     /**
-     * 商品新鲜度 ZSet - member: productId, score: timestamp
+     * 新品。是一组 List<Long> 商品 id
      */
     public static final String PRODUCT_NEW = "product:new";
-    
-    /**
-     * 商品销量 Hash - field: productId, value: 销量
-     */
-    public static final String PRODUCT_ORDER_PREFIX = "product:order:";
+
     
     /**
      * 商品浏览量 Hash - field: productId, value: 浏览量
@@ -28,10 +24,6 @@ public class RedisKeyConstant {
      */
     public static final String HOT_PRODUCTS_GUEST = "hot_products:guest";
     
-    /**
-     * 热门商品分数 ZSet - member: productId, score: 热度分数
-     * 用于临时存储计算出的热度分数
-     */
-    public static final String HOT_PRODUCTS_SCORE = "hot_products:score";
+
 }
 

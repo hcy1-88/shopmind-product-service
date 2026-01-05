@@ -1,11 +1,14 @@
 package com.shopmind.productservice.job;
 
+import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.shopmind.productservice.constant.RedisKeyConstant;
 import com.shopmind.productservice.entity.Product;
 import com.shopmind.productservice.enums.ProductStatus;
+import com.shopmind.productservice.properties.RecommendProperties;
 import com.shopmind.productservice.service.ProductService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RAtomicLong;
 import org.redisson.api.RBucket;
 import org.redisson.api.RList;
 import org.redisson.api.RedissonClient;
@@ -34,17 +37,9 @@ public class HotProductGenerationJob {
     @Resource
     private ProductService productService;
 
-    /**
-     * 热度权重配置
-     */
-    private static final double FRESHNESS_WEIGHT = 0.3;  // 新鲜度权重 30%
-    private static final double SALES_WEIGHT = 0.5;      // 销量权重 50%
-    private static final double VIEWS_WEIGHT = 0.2;      // 浏览量权重 20%
+    @Resource
+    private RecommendProperties recommendProperties;
 
-    /**
-     * 热门商品数量
-     */
-    private static final int HOT_PRODUCTS_COUNT = 100;
 
     /**
      * 定时任务：每 30 分钟执行一次
@@ -57,7 +52,7 @@ public class HotProductGenerationJob {
 
         try {
             // 1. 获取所有已审核通过的商品
-            List<Product> approvedProducts = getApprovedProducts();
+            List<Product> approvedProducts = getApprovedProducts(recommendProperties.getRecallFromDB());
             if (approvedProducts.isEmpty()) {
                 log.warn("没有已审核通过的商品，跳过热门商品计算");
                 return;
@@ -69,7 +64,7 @@ public class HotProductGenerationJob {
             // 3. 按热度分数排序，取前 N 个
             List<Long> hotProductIds = productScores.entrySet().stream()
                     .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
-                    .limit(HOT_PRODUCTS_COUNT)
+                    .limit(recommendProperties.getHotLimit())
                     .map(Map.Entry::getKey)
                     .collect(Collectors.toList());
 
@@ -88,10 +83,11 @@ public class HotProductGenerationJob {
     /**
      * 获取所有已审核通过的商品
      */
-    private List<Product> getApprovedProducts() {
+    private List<Product> getApprovedProducts(int limit) {
         return productService.lambdaQuery()
                 .eq(Product::getStatus, ProductStatus.APPROVED)
                 .isNull(Product::getDeletedAt)
+                .last("ORDER BY RANDOM() LIMIT " + limit)
                 .list();
     }
 
@@ -111,15 +107,15 @@ public class HotProductGenerationJob {
             double freshnessScore = calculateFreshnessScore(product, params);
 
             // 2. 销量分数
-            double salesScore = calculateSalesScore(productId, params);
+            double salesScore = calculateSalesScore(product, params);
 
             // 3. 浏览量分数
             double viewsScore = calculateViewsScore(productId, params);
 
             // 4. 综合热度 = 加权求和
-            double totalScore = freshnessScore * FRESHNESS_WEIGHT 
-                              + salesScore * SALES_WEIGHT 
-                              + viewsScore * VIEWS_WEIGHT;
+            double totalScore = freshnessScore * recommendProperties.getFreshWeight()
+                              + salesScore * recommendProperties.getSalesWeight()
+                              + viewsScore * recommendProperties.getViewsWeight();
 
             scores.put(productId, totalScore);
 
@@ -144,12 +140,7 @@ public class HotProductGenerationJob {
 
         // 计算销量最大值
         long maxSales = products.stream()
-                .mapToLong(p -> {
-                    String key = RedisKeyConstant.PRODUCT_ORDER_PREFIX + p.getId();
-                    RBucket<Object> bucket = redissonClient.getBucket(key);
-                    Object value = bucket.get();
-                    return value != null ? Long.parseLong(value.toString()) : 0L;
-                })
+                .mapToLong(Product::getSalesCount)
                 .max()
                 .orElse(1L);
 
@@ -164,7 +155,12 @@ public class HotProductGenerationJob {
                 .max()
                 .orElse(1L);
 
-        return new NormalizationParams(timeRange, maxSales, maxViews);
+        long maxLikeCounts = products.stream()
+                .mapToLong(Product::getLikeCount)
+                .max()
+                .orElse(1L);
+
+        return new NormalizationParams(timeRange, maxSales, maxViews, maxLikeCounts);
     }
 
     /**
@@ -186,16 +182,11 @@ public class HotProductGenerationJob {
     /**
      * 计算销量分数（0-1，销量越高分数越高）
      */
-    private double calculateSalesScore(Long productId, NormalizationParams params) {
-        String key = RedisKeyConstant.PRODUCT_ORDER_PREFIX + productId;
-        RBucket<Object> bucket = redissonClient.getBucket(key);
-        Object value = bucket.get();
-        long sales = value != null ? Long.parseLong(value.toString()) : 0L;
-
+    private double calculateSalesScore(Product product, NormalizationParams params) {
+        long sales = product.getSalesCount();
         if (params.maxSales <= 0) {
             return 0.0;
         }
-
         // 归一化
         return (double) sales / params.maxSales;
     }
@@ -205,9 +196,9 @@ public class HotProductGenerationJob {
      */
     private double calculateViewsScore(Long productId, NormalizationParams params) {
         String key = RedisKeyConstant.PRODUCT_VIEW_PREFIX + productId;
-        RBucket<Object> bucket = redissonClient.getBucket(key);
-        Object value = bucket.get();
-        long views = value != null ? Long.parseLong(value.toString()) : 0L;
+        RAtomicLong view = redissonClient.getAtomicLong(key);
+        // 浏览量加 1
+        long views = view.get();
 
         if (params.maxViews <= 0) {
             return 0.0;
@@ -215,6 +206,18 @@ public class HotProductGenerationJob {
 
         // 归一化
         return (double) views / params.maxViews;
+    }
+
+    /**
+     * 计算点赞分数（0-1，点赞越高分数越高）
+     */
+    private double calculateLikeScore(Product product, NormalizationParams params) {
+        long likeCount = product.getLikeCount();
+        if (params.likeCount <= 0) {
+            return 0.0;
+        }
+        // 归一化
+        return (double) likeCount / params.likeCount;
     }
 
     /**
@@ -231,8 +234,8 @@ public class HotProductGenerationJob {
         if (!hotProductIds.isEmpty()) {
             list.addAll(hotProductIds);
 
-            // 设置过期时间为 2 小时（防止定时任务失败导致数据过期）
-            list.expire(Duration.ofHours(2));
+            // 设置过期时间
+            list.expire(Duration.ofDays(recommendProperties.getHotExpire()));
 
             log.info("成功保存 {} 个热门商品到 Redis", hotProductIds.size());
         }
@@ -245,11 +248,13 @@ public class HotProductGenerationJob {
         final long timeRange;   // 时间范围（毫秒）
         final long maxSales;    // 最大销量
         final long maxViews;    // 最大浏览量
+        final long likeCount;
 
-        NormalizationParams(long timeRange, long maxSales, long maxViews) {
+        NormalizationParams(long timeRange, long maxSales, long maxViews, long likeCount) {
             this.timeRange = timeRange;
             this.maxSales = maxSales;
             this.maxViews = maxViews;
+            this.likeCount = likeCount;
         }
     }
 }
