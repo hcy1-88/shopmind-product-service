@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,17 +38,16 @@ public class NewProductJob {
 
 
     /**
-     * 定时任务：每天凌晨 2 点执行
+     * 定时任务：每 6 小时执行一次
      * cron: 秒 分 时 日 月 周
      */
-//    @Scheduled(cron = "0 0 2 * * ?")  TODO 记得改回来
-    @Scheduled(cron = "0 */20 * * * ?")  // 暂时每点20分钟执行一次
+    @Scheduled(cron = "0 0 0/6 * * ?")
     public void generateNewProducts() {
         log.info("========== 开始生成新品商品列表 ==========");
         long startTime = System.currentTimeMillis();
 
         try {
-            // 1. 计算7天前的时间点
+            // 1. 时间窗口
             LocalDateTime window = LocalDateTime.now().minusDays(recommendProperties.getFreshWindow());
 
             // 2. 查询最近7天内创建、已审核、未删除的商品（按创建时间倒序）
@@ -55,9 +56,14 @@ public class NewProductJob {
                     .ge(Product::getCreatedAt, window)
                     .isNull(Product::getDeletedAt)
                     .orderByDesc(Product::getCreatedAt)
-                    .last("ORDER BY RANDOM() LIMIT " + recommendProperties.getRecallFromDB()) // 防止数据过多
+                    .last("LIMIT " + recommendProperties.getRecallFromDB() * 2) // 防止数据过多
                     .list();
-
+            // 扩大 2 倍后，再随机取 recommendProperties.getRecallFromDB() 个
+            if (!newProducts.isEmpty()) {
+                List<Product> shuffled = new ArrayList<>(newProducts);
+                Collections.shuffle(shuffled);
+                newProducts = shuffled.subList(0, Math.min(recommendProperties.getRecallFromDB(), shuffled.size()));
+            }
             // 3. 提取商品ID
             List<Long> newProductIds = newProducts.stream()
                     .map(Product::getId)

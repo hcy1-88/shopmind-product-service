@@ -783,6 +783,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .name(product.getName())
                 .price(product.getPrice())
                 .image(product.getCoverImage())
+                .price(product.getPrice())
                 .originalPrice(product.getOriginalPrice())
                 .priceRange(product.getPriceRange())
                 .category(product.getCategoryId())

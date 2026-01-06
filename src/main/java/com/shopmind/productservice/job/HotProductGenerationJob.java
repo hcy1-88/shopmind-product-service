@@ -42,10 +42,10 @@ public class HotProductGenerationJob {
 
 
     /**
-     * 定时任务：每 30 分钟执行一次
+     * 定时任务：每 4 小时执行行一次，早上 8 点开始
      * cron: 秒 分 时 日 月 周
      */
-    @Scheduled(cron = "0 */30 * * * ?")
+    @Scheduled(cron = "0 0 8-20/4 * * ?")
     public void generateHotProducts() {
         log.info("========== 开始计算热门商品 ==========");
         long startTime = System.currentTimeMillis();
@@ -148,9 +148,7 @@ public class HotProductGenerationJob {
         long maxViews = products.stream()
                 .mapToLong(p -> {
                     String key = RedisKeyConstant.PRODUCT_VIEW_PREFIX + p.getId();
-                    RBucket<Object> bucket = redissonClient.getBucket(key);
-                    Object value = bucket.get();
-                    return value != null ? Long.parseLong(value.toString()) : 0L;
+                    return redissonClient.getAtomicLong(key).get();
                 })
                 .max()
                 .orElse(1L);
