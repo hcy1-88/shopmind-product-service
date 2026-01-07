@@ -95,7 +95,7 @@ public class NewProductJob {
         if (!newProductIds.isEmpty()) {
             list.addAll(newProductIds);
 
-            // 设置过期时间：25 小时（确保覆盖到下次执行）
+            // 设置过期时间：30 day
             list.expire(Duration.ofHours(recommendProperties.getNewProductExpire()));
 
             log.info("成功保存 {} 个新品商品到 Redis", newProductIds.size());
