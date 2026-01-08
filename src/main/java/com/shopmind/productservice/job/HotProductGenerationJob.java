@@ -6,6 +6,7 @@ import com.shopmind.productservice.entity.Product;
 import com.shopmind.productservice.enums.ProductStatus;
 import com.shopmind.productservice.properties.RecommendProperties;
 import com.shopmind.productservice.service.ProductService;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RAtomicLong;
@@ -41,12 +42,21 @@ public class HotProductGenerationJob {
     private RecommendProperties recommendProperties;
 
 
+    @PostConstruct
+    public void init(){
+        hotProductsGen();
+    }
+
     /**
      * 定时任务：每 4 小时执行行一次，早上 8 点开始
      * cron: 秒 分 时 日 月 周
      */
     @Scheduled(cron = "0 0 8-20/4 * * ?")
     public void generateHotProducts() {
+        hotProductsGen();
+    }
+
+    private void hotProductsGen() {
         log.info("========== 开始计算热门商品 ==========");
         long startTime = System.currentTimeMillis();
 
@@ -72,7 +82,7 @@ public class HotProductGenerationJob {
             saveHotProductsToRedis(hotProductIds);
 
             long duration = System.currentTimeMillis() - startTime;
-            log.info("========== 热门商品计算完成，共 {} 个商品，耗时 {}ms ==========", 
+            log.info("========== 热门商品计算完成，共 {} 个商品，耗时 {}ms ==========",
                     hotProductIds.size(), duration);
 
         } catch (Exception e) {

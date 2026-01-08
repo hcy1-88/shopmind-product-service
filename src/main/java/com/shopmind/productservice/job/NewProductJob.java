@@ -5,6 +5,7 @@ import com.shopmind.productservice.entity.Product;
 import com.shopmind.productservice.enums.ProductStatus;
 import com.shopmind.productservice.properties.RecommendProperties;
 import com.shopmind.productservice.service.ProductService;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RList;
@@ -36,6 +37,10 @@ public class NewProductJob {
     @Resource
     private RecommendProperties  recommendProperties;
 
+    @PostConstruct
+    public void init() {
+        newProductsGen();
+    }
 
     /**
      * 定时任务：每 6 小时执行一次
@@ -43,6 +48,10 @@ public class NewProductJob {
      */
     @Scheduled(cron = "0 0 0/6 * * ?")
     public void generateNewProducts() {
+        newProductsGen();
+    }
+
+    private void newProductsGen() {
         log.info("========== 开始生成新品商品列表 ==========");
         long startTime = System.currentTimeMillis();
 
