@@ -19,6 +19,7 @@ spring:
             refresh: true
       discovery:
         namespace: shopmind-dev
+        group: DEFAULT_GROUP
         enabled: true
   config:
     import: "nacos:${spring.application.name}.yaml,nacos:common.yaml"
