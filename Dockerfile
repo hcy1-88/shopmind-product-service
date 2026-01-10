@@ -1,4 +1,4 @@
-FROM phenompeople/openjdk17:latest
+FROM eclipse-temurin:17-jre
 LABEL authors="hcy18"
 
 # 设置工作目录
