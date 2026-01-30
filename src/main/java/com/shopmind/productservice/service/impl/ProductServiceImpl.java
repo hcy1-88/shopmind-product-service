@@ -920,35 +920,14 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
      * @return 示例 (续航 | 拍照) & 手机 & 华为
      */
     public static String buildTsQueryString(List<String> coreWords, List<String> expandWords) {
-        Function<String, String> escapeWord = word -> {
-            if (word == null) return "";
-            if (word.matches(".*[&|!()<> \t\n].*")) {
-                return "\"" + word.replace("\"", "\"\"") + "\"";
-            }
-            return word;
-        };
+        // 处理扩展词：用 | 连接
+        String expandPart = getTokenizePartWithOr(expandWords);
 
-        String corePart = "";
-        if (coreWords != null && !coreWords.isEmpty()) {
-            corePart = coreWords.stream()
-                    .map(escapeWord)
-                    .filter(w -> !w.isEmpty())
-                    .collect(Collectors.joining(" & "));
-        }
-
-        String expandPart = "";
-        if (expandWords != null && !expandWords.isEmpty()) {
-            String orClause = expandWords.stream()
-                    .map(escapeWord)
-                    .filter(w -> !w.isEmpty())
-                    .collect(Collectors.joining(" | "));
-            if (!orClause.isEmpty()) {
-                expandPart = "(" + orClause + ")";
-            }
-        }
+        // 处理核心词：用 | 连接
+        String corePart = getTokenizePartWithOr(coreWords);
 
         // 组合
-        if (!corePart.isEmpty() && !expandPart.isEmpty()) {
+        if (!expandPart.isEmpty() && !corePart.isEmpty()) {
             return expandPart + " & " + corePart;
         } else if (!corePart.isEmpty()) {
             return corePart;
@@ -956,6 +935,27 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             return expandPart.isEmpty() ? "" : expandPart;
         }
     }
+
+    private static String getTokenizePartWithOr(List<String> expandWords) {
+        String expandPart = "";
+        if (expandWords != null && !expandWords.isEmpty()) {
+            String orClause = expandWords.stream()
+                    .map(w -> {
+                        if (w == null) return "";
+                        if (w.matches(".*[&|!()<> \t\n].*")) {
+                            return "\"" + w.replace("\"", "\"\"") + "\"";
+                        }
+                        return w;
+                    })
+                    .filter(w -> !w.isEmpty())
+                    .collect(Collectors.joining(" | "));
+            if (!orClause.isEmpty()) {
+                expandPart = "(" + orClause + ")";
+            }
+        }
+        return expandPart;
+    }
+
 
     @Override
     public void addView(Long productId) {
