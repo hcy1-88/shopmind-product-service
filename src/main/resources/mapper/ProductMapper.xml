@@ -14,8 +14,8 @@
     <select id="searchProductIdsByEnhancedKeywords" resultType="java.lang.Long">
         SELECT id
         FROM sm_products
-        WHERE search_vector @@ to_tsquery('jiebacfg', #{tsQueryStr})
-        ORDER BY ts_rank(search_vector, websearch_to_tsquery('jiebacfg', #{originalKeyword})) DESC
+        WHERE search_vector @@ to_tsquery('jiebaqry', #{tsQueryStr})
+        ORDER BY ts_rank(search_vector, websearch_to_tsquery('jiebaqry', #{originalKeyword})) DESC
             LIMIT #{limit}
     </select>
 </mapper>
