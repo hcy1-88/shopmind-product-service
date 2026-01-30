@@ -763,12 +763,24 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .isNull(Product::getDeletedAt)
                 .list();
 
-        // 3. 查 tag
-        List<Long> ids = products.stream().map(Product::getId).toList();
-        Map<Long, List<GenerateTagsResponseDto.TagInfo>> tagsByProductIds = productTagRelationService.findTagsByProductIds(ids);
+        // 将 products 转换为 Map，按 ID 索引
+        Map<Long, Product> productMap = products.stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
 
-        // 4, 转换 dto
-        return products.stream().map(p -> convertToDto(p, tagsByProductIds.get(p.getId()))).toList();
+        // 查 tag
+        Map<Long, List<GenerateTagsResponseDto.TagInfo>> tagsByProductIds = productTagRelationService.findTagsByProductIds(productIds);
+
+        // 按照 productIds 的顺序返回结果
+        return productIds.stream()
+                .map(id -> {
+                    Product product = productMap.get(id);
+                    if (product == null) {
+                        return null;
+                    }
+                    return convertToDto(product, tagsByProductIds.get(id));
+                })
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     /**
