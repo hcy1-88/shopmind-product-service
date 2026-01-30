@@ -33,7 +33,6 @@ import com.shopmind.productservice.mapper.ProductMapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RAtomicLong;
-import org.redisson.api.RBucket;
 import org.redisson.api.RList;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
@@ -42,7 +41,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -859,7 +857,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     @Override
     public PageResult<List<ProductResponseDto>> searchProducts(String keyword, Integer page, Integer pageSize) {
-        List<Long> resIds = new ArrayList<>();
+        List<Long> resIds;
         // 1, 增强搜索词
         ResultContext<EnhanceKeywordResponseDTO> enhanceRes = aiServiceClient.enhanceSearchKeyword(new EnhanceKeywordRequestDTO(keyword));
         EnhanceKeywordResponseDTO data = enhanceRes.getData();
