@@ -14,7 +14,7 @@
     <select id="searchProductIdsByEnhancedKeywords" resultType="java.lang.Long">
         SELECT id
         FROM sm_products
-        WHERE search_vector @@ to_tsquery('jiebaqry', #{tsQueryStr})
+        WHERE search_vector @@ to_tsquery('jiebaqry', #{tsQueryStr}) AND deleted_at is null
         ORDER BY ts_rank(search_vector, websearch_to_tsquery('jiebaqry', #{originalKeyword})) DESC
             LIMIT #{limit}
     </select>
