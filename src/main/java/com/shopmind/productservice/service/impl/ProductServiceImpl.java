@@ -14,10 +14,7 @@ import com.shopmind.productservice.client.AIServiceClient;
 import com.shopmind.productservice.client.BaiduGeocodingClient;
 import com.shopmind.productservice.client.RecommendationClient;
 import com.shopmind.productservice.client.dto.request.*;
-import com.shopmind.productservice.client.dto.response.GenerateSummaryResponseDto;
-import com.shopmind.productservice.client.dto.response.GenerateTagsResponseDto;
-import com.shopmind.productservice.client.dto.response.ProductAuditResponseDto;
-import com.shopmind.productservice.client.dto.response.VectorizeProductResponseDto;
+import com.shopmind.productservice.client.dto.response.*;
 import com.shopmind.productservice.constant.RedisKeyConstant;
 import com.shopmind.productservice.dto.request.*;
 import com.shopmind.productservice.dto.response.*;
@@ -329,6 +326,15 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
         // 3. 清理关联数据
         cleanupOldProductData(productId);
+
+        // 4，删除向量
+        ProductIdsRequestDTO requestDTO = new ProductIdsRequestDTO();
+        requestDTO.setProductIds(List.of(productId));
+        DeleteVectorResponseDTO resp = aiServiceClient.deleteProductVector(requestDTO).getData();
+        if (resp.getSuccessCount() != 1){
+            log.error("商品删除失败！失败信息：{}", resp);
+            throw new ProductServiceException("PRODUCT0008");
+        }
     }
 
     /**

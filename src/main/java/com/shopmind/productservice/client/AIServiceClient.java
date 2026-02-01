@@ -1,14 +1,8 @@
 package com.shopmind.productservice.client;
 
 import com.shopmind.framework.context.ResultContext;
-import com.shopmind.productservice.client.dto.request.GenerateSummaryRequestDto;
-import com.shopmind.productservice.client.dto.request.GenerateTagsRequestDto;
-import com.shopmind.productservice.client.dto.request.ProductAuditRequestDto;
-import com.shopmind.productservice.client.dto.request.VectorizeProductRequestDto;
-import com.shopmind.productservice.client.dto.response.GenerateSummaryResponseDto;
-import com.shopmind.productservice.client.dto.response.GenerateTagsResponseDto;
-import com.shopmind.productservice.client.dto.response.ProductAuditResponseDto;
-import com.shopmind.productservice.client.dto.response.VectorizeProductResponseDto;
+import com.shopmind.productservice.client.dto.request.*;
+import com.shopmind.productservice.client.dto.response.*;
 import com.shopmind.productservice.dto.request.EnhanceKeywordRequestDTO;
 import com.shopmind.productservice.dto.response.EnhanceKeywordResponseDTO;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -57,4 +51,12 @@ public interface AIServiceClient {
 
     @PostExchange("/enhance/search-keyword")
     ResultContext<EnhanceKeywordResponseDTO> enhanceSearchKeyword(@RequestBody EnhanceKeywordRequestDTO requestDto);
+
+    /**
+     * 批量删除商品向量
+     * @param requestDto  商品 id
+     * @return 删除情况
+     */
+    @PostExchange("/vectorize/delete")
+    ResultContext<DeleteVectorResponseDTO> deleteProductVector(@RequestBody ProductIdsRequestDTO requestDto);
 }
