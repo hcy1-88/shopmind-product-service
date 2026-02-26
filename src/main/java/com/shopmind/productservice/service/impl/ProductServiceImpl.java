@@ -91,6 +91,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     @Resource
     private RecommendProperties recommendProperties;
 
+    @Resource
+    private ProductsCategoryService productsCategoryService;
+
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ProductResponseDto createProduct(ProductRequestDto requestDto) {
@@ -803,6 +806,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .originalPrice(product.getOriginalPrice())
                 .priceRange(product.getPriceRange())
                 .category(product.getCategoryId())
+                .categoryName(getCategoryName(product.getCategoryId()))
                 .aiSummary(product.getAiSummary())
                 .description(product.getDescription())
                 .salesCount(product.getSalesCount())
@@ -860,6 +864,17 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         responseDto.setDistrictCode(product.getDistrictCode());
         responseDto.setDistrictName(product.getDistrictName());
         responseDto.setDetailAddress(product.getDetailAddress());
+    }
+
+    /**
+     * 根据分类 ID 获取分类名称
+     */
+    private String getCategoryName(Long categoryId) {
+        if (categoryId == null) {
+            return null;
+        }
+        ProductCategory category = productsCategoryService.getById(categoryId);
+        return category != null ? category.getName() : null;
     }
 
     @Transactional(rollbackFor = Exception.class)

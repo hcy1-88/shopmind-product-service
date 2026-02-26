@@ -79,6 +79,8 @@ public class ProductResponseDto {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long category;
 
+    private String categoryName;
+
     /**
      * 商品的审核状态
      */
