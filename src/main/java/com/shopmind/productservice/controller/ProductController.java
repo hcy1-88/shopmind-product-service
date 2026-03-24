@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.shopmind.framework.context.PageResult;
 import com.shopmind.framework.context.ResultContext;
 import com.shopmind.productservice.client.dto.request.ProductSoldRequestDTO;
+import com.shopmind.productservice.dto.request.ProductAvailabilityRequestDTO;
 import com.shopmind.productservice.dto.request.ProductGettingRequestDTO;
 import com.shopmind.productservice.dto.request.ProductRequestDto;
 import com.shopmind.productservice.dto.response.ProductResponseDto;
@@ -14,6 +15,7 @@ import jakarta.validation.constraints.NotBlank;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 商品 Controller - 面向 C 端用户
@@ -84,5 +86,16 @@ public class ProductController {
         Preconditions.checkArgument(limit > 0, "limit should be greater than 0");
         List<ProductResponseDto> newProducts = productService.getNewProducts(limit);
         return ResultContext.success(newProducts);
+    }
+
+    /**
+     * 批量检测商品是否可用
+     * @param request 包含商品ID列表的请求
+     * @return Map<商品ID, 是否可用>
+     */
+    @PostMapping("/check-availability")
+    public ResultContext<Map<Long, Boolean>> checkProductAvailability(@RequestBody ProductAvailabilityRequestDTO request){
+        Map<Long, Boolean> result = productService.batchCheckProductAvailability(request.getProductIds());
+        return ResultContext.success(result);
     }
 }

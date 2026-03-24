@@ -9,6 +9,7 @@ import com.shopmind.productservice.entity.Product;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.List;
+import java.util.Map;
 
 /**
 * @author hcy18
@@ -81,4 +82,11 @@ public interface ProductService extends IService<Product> {
      * 获取新品
      */
     List<ProductResponseDto> getNewProducts(Integer limit);
+
+    /**
+     * 批量检测商品是否可用
+     * @param productIds 商品ID列表
+     * @return Map<商品ID, 是否可用>
+     */
+    Map<Long, Boolean> batchCheckProductAvailability(List<Long> productIds);
 }

@@ -1017,6 +1017,30 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         List<Long> limits = ids.stream().limit(limit).toList();
         return getProductsBatch(limits);
     }
+
+    @Override
+    public Map<Long, Boolean> batchCheckProductAvailability(List<Long> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        // 批量查询商品
+        List<Product> products = this.listByIds(productIds);
+
+        // 将查询到的商品中 status=APPROVED 且 deletedAt=null 的 ID 收集到 Set
+        Set<Long> availableIds = products.stream()
+                .filter(p -> p.getStatus() == ProductStatus.APPROVED)
+                .filter(p -> p.getDeletedAt() == null)
+                .map(Product::getId)
+                .collect(Collectors.toSet());
+
+        // 构造返回结果，所有输入的 ID 都要在结果中
+        Map<Long, Boolean> result = new HashMap<>();
+        for (Long id : productIds) {
+            result.put(id, availableIds.contains(id));
+        }
+        return result;
+    }
 }
 
 
